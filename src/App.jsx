@@ -676,10 +676,11 @@ function TrackerApp({profile,goal,onEditProfile}){
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content}]}),
       });
       const data=await res.json();
+      if(data.error) throw new Error(data.error.message);
       const txt=data.content.map(i=>i.text||"").join("");
       setResult(JSON.parse(txt.replace(/```json|```/g,"").trim()));
-    }catch{setError("Couldn't analyze. Try a clearer image or type the food name.");}
-    setLoading(false);
+      setResult(JSON.parse(txt.replace(/```json|```/g,"").trim()));
+    }catch(err){setError("Error: " + err.message);}    setLoading(false);
   };
 
   const logMeal=(meal)=>{
