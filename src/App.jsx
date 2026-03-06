@@ -10,7 +10,7 @@ import {
 } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAuzfQf2ahDGa342ADxlA_CJeO30fyqCQo",
+  apiKey: "AIzaSyBdin15LOt0vwN3H1EXAnFox2Zyjek5J4Y",
   authDomain: "bitelyze-project.firebaseapp.com",
   projectId: "bitelyze-project",
   storageBucket: "bitelyze-project.firebasestorage.app",
