@@ -10,12 +10,12 @@ import {
 } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey:            process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain:        process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId:         process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket:     process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId:             process.env.REACT_APP_FIREBASE_APP_ID,
+  apiKey: "AIzaSyAuzfQf2ahDGa342ADxlA_CJeO30fyqCQo",
+  authDomain: "bitelyze-project.firebaseapp.com",
+  projectId: "bitelyze-project",
+  storageBucket: "bitelyze-project.firebasestorage.app",
+  messagingSenderId: "989253564001",
+  appId: "1:989253564001:web:ba5593143b7735049e1c20",
 };
 const firebaseApp    = initializeApp(firebaseConfig);
 const auth           = getAuth(firebaseApp);
