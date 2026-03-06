@@ -170,7 +170,7 @@ export default function App(){
 
   useEffect(()=>{const unsub=onAuthStateChanged(auth,async(user)=>{setAuthUser(user||null);if(user){const saved=await loadProfile(user.uid);if(saved&&saved.height){setProfile(p=>({...p,...saved}));setScreen("app");}else{if(user.displayName)setProfile(p=>({...p,name:user.displayName}));setScreen("welcome");}}});return unsub;},[]);
 
-  const saveAndContinue=async()=>{if(authUser)await saveProfile(authUser.uid,profile);setScreen("app");};
+  const saveAndContinue=async()=>{try{if(authUser)await saveProfile(authUser.uid,profile);}catch(e){console.log("Profile save error:",e);}setScreen("app");};
 
   if(authUser===undefined)return(<div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><style>{GS}</style><div style={{width:48,height:48,borderRadius:14,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>🍽️</div><div style={{width:32,height:32,border:`3px solid ${T.border}`,borderTop:`3px solid ${T.accent}`,borderRadius:"50%"}} className="spin"/></div>);
   if(!authUser)return(<><style>{GS}</style><AuthScreen/></>);
