@@ -3,7 +3,7 @@ import { initializeApp } from "firebase/app";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, onAuthStateChanged
+  sendPasswordResetEmail, signOut, onAuthStateChanged
 } from "firebase/auth";
 import {
   getFirestore, doc, setDoc, getDoc, arrayUnion
@@ -41,6 +41,60 @@ const loadStats=async(uid)=>{const snap=await getDoc(doc(db,"users",uid,"data","
 const addMealToHistory=async(uid,meal)=>{await setDoc(doc(db,"users",uid,"data","history"),{meals:arrayUnion(meal)},{merge:true});};
 const loadHistory=async(uid)=>{const snap=await getDoc(doc(db,"users",uid,"data","history"));return snap.exists()?(snap.data().meals||[]):[];};
 
+// Load last N days of data for chart + streak
+const loadRecentDays=async(uid,n=14)=>{
+  const days={};
+  const today=new Date();
+  for(let i=0;i<n;i++){
+    const d=new Date(today);
+    d.setDate(d.getDate()-i);
+    const key=d.toISOString().split("T")[0];
+    try{
+      const snap=await getDoc(doc(db,"users",uid,"days",key));
+      if(snap.exists())days[key]=snap.data();
+    }catch(e){}
+  }
+  return days;
+};
+
+// Calculate real streak from day data
+const calcStreak=(daysMap)=>{
+  let streak=0;
+  const today=new Date();
+  for(let i=0;i<365;i++){
+    const d=new Date(today);
+    d.setDate(d.getDate()-i);
+    const key=d.toISOString().split("T")[0];
+    const day=daysMap[key];
+    if(day&&day.meals&&day.meals.length>0){
+      streak++;
+    }else if(i===0){
+      continue; // today might not have meals yet
+    }else{
+      break;
+    }
+  }
+  return Math.max(streak,1);
+};
+
+// Build 7-day chart data
+const buildWeekData=(daysMap)=>{
+  const result=[];
+  const today=new Date();
+  for(let i=6;i>=0;i--){
+    const d=new Date(today);
+    d.setDate(d.getDate()-i);
+    const key=d.toISOString().split("T")[0];
+    const day=daysMap[key];
+    result.push({
+      label:d.toLocaleDateString("en",{weekday:"short"}).slice(0,3),
+      cal:day?day.consumed||0:0,
+      isToday:i===0,
+    });
+  }
+  return result;
+};
+
 const Btn=({onClick,disabled,children,style={}})=>(<button className={disabled?"":"glow ripple"} onClick={onClick} disabled={disabled} style={{width:"100%",padding:"15px",borderRadius:16,border:"none",background:disabled?"#1c1c2a":`linear-gradient(135deg,${T.accent},#00b87a)`,color:disabled?T.muted:"#000",fontWeight:800,fontSize:15,cursor:disabled?"not-allowed":"pointer",transition:"all .2s",fontFamily:"inherit",boxShadow:disabled?"none":`0 4px 24px ${T.accentGlow}, inset 0 1px 0 rgba(255,255,255,0.2)`,...style}}>{children}</button>);
 const Card=({children,style={}})=>(<div style={{background:`linear-gradient(145deg,${T.card},#0d0d15)`,border:`1px solid ${T.border}`,borderRadius:20,padding:"18px 20px",marginBottom:14,boxShadow:"0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04)",backdropFilter:"blur(10px)",...style}}>{children}</div>);
 const CardTitle=({icon,children})=>(<p style={{fontSize:13,fontWeight:800,marginBottom:14,display:"flex",alignItems:"center",gap:8,color:T.text,letterSpacing:"-0.01em"}}><span style={{fontSize:16}}>{icon}</span>{children}</p>);
@@ -57,9 +111,11 @@ function AuthScreen(){
   const[name,setName]=useState("");
   const[loading,setLoading]=useState(false);
   const[error,setError]=useState("");
+  const[resetSent,setResetSent]=useState(false);
   const handleEmail=async()=>{if(!email||!pass)return setError("Please fill in all fields");setLoading(true);setError("");try{if(mode==="signup"){if(!name)return setError("Please enter your name");const cred=await createUserWithEmailAndPassword(auth,email,pass);await saveProfile(cred.user.uid,{name});}else{await signInWithEmailAndPassword(auth,email,pass);}}catch(e){setError(e.message.replace("Firebase: ","").replace(/\(auth.*\)/,""));}setLoading(false);};
+  const handleForgotPassword=async()=>{if(!email)return setError("Enter your email address first");setLoading(true);setError("");try{await sendPasswordResetEmail(auth,email);setResetSent(true);}catch(e){setError(e.message.replace("Firebase: ","").replace(/\(auth.*\)/,""));}setLoading(false);};
   const handleGoogle=async()=>{setLoading(true);setError("");try{await signInWithPopup(auth,googleProvider);}catch(e){setError(e.message.replace("Firebase: ","").replace(/\(auth.*\)/,""));}setLoading(false);};
-  return(<div className="fadeIn" style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",padding:"40px 22px",background:T.bg,backgroundImage:`radial-gradient(ellipse at 50% 28%, #00e5a012 0%, transparent 62%)`}}><div className="pop" style={{width:80,height:80,borderRadius:24,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,marginBottom:22,boxShadow:`0 0 52px ${T.accentGlow}`}}>🍽️</div><h1 style={{fontSize:30,fontWeight:900,marginBottom:6,color:T.text}}>Welcome to <span style={{color:T.accent}}>Bitelyze</span></h1><p style={{color:T.muted,fontSize:13,marginBottom:32}}>{mode==="login"?"Sign in to continue your journey":"Create your free account"}</p><div style={{width:"100%",maxWidth:360}}><button onClick={handleGoogle} className="ripple" style={{width:"100%",padding:"13px",borderRadius:13,border:`1.5px solid ${T.border}`,background:"#0e0e16",color:T.text,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:16}}><span style={{fontSize:20}}>🔵</span>Continue with Google</button><div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}><div style={{flex:1,height:1,background:T.border}}/><span style={{fontSize:11,color:T.muted}}>or</span><div style={{flex:1,height:1,background:T.border}}/></div>{mode==="signup"&&<TextInput label="Your Name" value={name} onChange={setName} placeholder="e.g. Tosyne"/>}<TextInput label="Email" value={email} onChange={setEmail} placeholder="you@email.com" type="email"/><TextInput label="Password" value={pass} onChange={setPass} placeholder="Min. 6 characters" type="password"/>{error&&<div style={{background:"#1a0f0f",border:`1px solid ${T.danger}40`,borderRadius:10,padding:"10px 14px",marginBottom:14,color:T.danger,fontSize:12}}>⚠️ {error}</div>}<Btn onClick={handleEmail} disabled={loading}>{loading?"Please wait…":mode==="login"?"Sign In →":"Create Account →"}</Btn><p style={{textAlign:"center",marginTop:18,fontSize:13,color:T.muted}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<span onClick={()=>{setMode(mode==="login"?"signup":"login");setError("");}} style={{color:T.accent,cursor:"pointer",fontWeight:700}}>{mode==="login"?"Sign Up":"Sign In"}</span></p></div></div>);
+  return(<div className="fadeIn" style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",padding:"40px 22px",background:T.bg,backgroundImage:`radial-gradient(ellipse at 50% 28%, #00e5a012 0%, transparent 62%)`}}><div className="pop" style={{width:80,height:80,borderRadius:24,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,marginBottom:22,boxShadow:`0 0 52px ${T.accentGlow}`}}>🍽️</div><h1 style={{fontSize:30,fontWeight:900,marginBottom:6,color:T.text}}>Welcome to <span style={{color:T.accent}}>Bitelyze</span></h1><p style={{color:T.muted,fontSize:13,marginBottom:32}}>{mode==="login"?"Sign in to continue your journey":"Create your free account"}</p><div style={{width:"100%",maxWidth:360}}><button onClick={handleGoogle} className="ripple" style={{width:"100%",padding:"13px",borderRadius:13,border:`1.5px solid ${T.border}`,background:"#0e0e16",color:T.text,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:16}}><span style={{fontSize:20}}>🔵</span>Continue with Google</button><div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}><div style={{flex:1,height:1,background:T.border}}/><span style={{fontSize:11,color:T.muted}}>or</span><div style={{flex:1,height:1,background:T.border}}/></div>{mode==="signup"&&<TextInput label="Your Name" value={name} onChange={setName} placeholder="e.g. Tosyne"/>}<TextInput label="Email" value={email} onChange={setEmail} placeholder="you@email.com" type="email"/><TextInput label="Password" value={pass} onChange={setPass} placeholder="Min. 6 characters" type="password"/>{mode==="login"&&<p onClick={handleForgotPassword} style={{textAlign:"right",fontSize:12,color:T.accent,cursor:"pointer",marginBottom:12,fontWeight:600}}>Forgot password?</p>}{resetSent&&<div style={{background:T.accentDim,border:`1px solid ${T.accent}40`,borderRadius:10,padding:"10px 14px",marginBottom:14,color:T.accent,fontSize:12}}>✅ Password reset email sent! Check your inbox.</div>}{error&&<div style={{background:"#1a0f0f",border:`1px solid ${T.danger}40`,borderRadius:10,padding:"10px 14px",marginBottom:14,color:T.danger,fontSize:12}}>⚠️ {error}</div>}<Btn onClick={handleEmail} disabled={loading}>{loading?"Please wait…":mode==="login"?"Sign In →":"Create Account →"}</Btn><p style={{textAlign:"center",marginTop:18,fontSize:13,color:T.muted}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<span onClick={()=>{setMode(mode==="login"?"signup":"login");setError("");}} style={{color:T.accent,cursor:"pointer",fontWeight:700}}>{mode==="login"?"Sign Up":"Sign In"}</span></p></div></div>);
 }
 
 function Welcome({onNext}){return(<div className="fadeIn" style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",padding:"40px 22px",textAlign:"center",background:T.bg,backgroundImage:`radial-gradient(ellipse at 50% 28%, #00e5a012 0%, transparent 62%)`}}><div className="pop" style={{width:92,height:92,borderRadius:26,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:46,marginBottom:26,boxShadow:`0 0 52px ${T.accentGlow}`}}>🍽️</div><h1 style={{fontSize:34,fontWeight:900,letterSpacing:"-1px",marginBottom:10,lineHeight:1.15,color:T.text}}>Meet <span style={{color:T.accent}}>Bitelyze</span></h1><p style={{color:T.muted,fontSize:14,lineHeight:1.75,maxWidth:290,marginBottom:36}}>Your personal AI nutrition coach. Snap meals, track calories, build healthy habits — one bite at a time.</p><div style={{width:"100%",maxWidth:330}}>{[["📸","Snap food → instant calorie breakdown"],["🧠","AI coach tips personalised to you"],["🏆","Streaks, badges & weekly progress"],["💧","Hydration tracking & meal reminders"]].map(([icon,text])=>(<div key={text} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 15px",background:"#0e0e16",border:`1px solid ${T.border}`,borderRadius:12,marginBottom:9,textAlign:"left"}}><span style={{fontSize:19}}>{icon}</span><span style={{fontSize:13,color:"#b8b8d0",fontWeight:500}}>{text}</span></div>))}<Btn onClick={onNext} style={{marginTop:14,fontSize:16,padding:"15px"}}>Let's Go →</Btn></div></div>);}
@@ -89,20 +145,23 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut}){
   const[water,setWater]=useState(0);
   const[stats,setStats]=useState({streak:1,totalMeals:0,waterGoalHits:0,daysUnderGoal:0,earlyBreakfast:0});
   const[saving,setSaving]=useState(false);
+  const[recentDays,setRecentDays]=useState({});
   const fileRef=useRef();
   const tipIdx=useState(()=>Math.floor(Math.random()*coachTips.length))[0];
 
-  useEffect(()=>{if(!uid)return;(async()=>{const[today,history,savedStats]=await Promise.all([loadTodayData(uid),loadHistory(uid),loadStats(uid)]);if(today){setConsumed(today.consumed||0);setMealLog(today.meals||[]);setWater(today.water||0);}if(history)setAllHistory(history);if(savedStats)setStats(savedStats);})();},[uid]);
+  useEffect(()=>{if(!uid)return;(async()=>{const[today,history,savedStats,days]=await Promise.all([loadTodayData(uid),loadHistory(uid),loadStats(uid),loadRecentDays(uid,14)]);if(today){setConsumed(today.consumed||0);setMealLog(today.meals||[]);setWater(today.water||0);}if(history)setAllHistory(history);setRecentDays(days);const realStreak=calcStreak(days);if(savedStats){setStats({...savedStats,streak:realStreak});}else{setStats(s=>({...s,streak:realStreak}));}})();},[uid]);
 
-  useEffect(()=>{if(!uid)return;const t=setTimeout(async()=>{setSaving(true);await saveTodayData(uid,{consumed,meals:mealLog,water});const newStats={...stats,totalMeals:allHistory.length,waterGoalHits:water>=8?Math.max(stats.waterGoalHits,1):stats.waterGoalHits,daysUnderGoal:consumed>0&&consumed<=goal?Math.max(stats.daysUnderGoal,1):stats.daysUnderGoal,earlyBreakfast:mealLog.some(m=>parseInt(m.time)<9)?Math.max(stats.earlyBreakfast,1):stats.earlyBreakfast};await saveStats(uid,newStats);setStats(newStats);setSaving(false);},1500);return()=>clearTimeout(t);},[consumed,mealLog,water]);
+  useEffect(()=>{if(!uid)return;const t=setTimeout(async()=>{setSaving(true);await saveTodayData(uid,{consumed,meals:mealLog,water});// Recalculate streak with today's updated data
+    const todayKey=new Date().toISOString().split("T")[0];const updatedDays={...recentDays,[todayKey]:{consumed,meals:mealLog,water}};setRecentDays(updatedDays);const realStreak=calcStreak(updatedDays);const newStats={...stats,streak:realStreak,totalMeals:allHistory.length,waterGoalHits:water>=8?Math.max(stats.waterGoalHits,1):stats.waterGoalHits,daysUnderGoal:consumed>0&&consumed<=goal?Math.max(stats.daysUnderGoal,1):stats.daysUnderGoal,earlyBreakfast:mealLog.some(m=>parseInt(m.time)<9)?Math.max(stats.earlyBreakfast,1):stats.earlyBreakfast};await saveStats(uid,newStats);setStats(newStats);setSaving(false);},1500);return()=>clearTimeout(t);},[consumed,mealLog,water]);
 
-  const weekData=Array.from({length:7}).map((_,i)=>({cal:i===new Date().getDay()-1?consumed:0}));
+  // Build real 7-day chart — inject today's live consumed value
+  const weekData=(()=>{const wd=buildWeekData(recentDays);const todayKey=new Date().toISOString().split("T")[0];return wd.map(d=>d.isToday?{...d,cal:consumed}:d);})();
   const rem=goal-consumed;
   const hc=result?(result.healthScore>=7?T.accent:result.healthScore>=4?T.orange:T.danger):T.accent;
 
   const handleFile=(file)=>{if(!file)return;const r=new FileReader();r.onload=(e)=>{setImage(e.target.result);setImgB64(e.target.result.split(",")[1]);setResult(null);setError(null);};r.readAsDataURL(file);};
 
-  const analyze=async()=>{if(!imgB64&&!textFood)return;setLoading(true);setError(null);try{const content=imgB64?[{type:"image",source:{type:"base64",media_type:"image/jpeg",data:imgB64}},{type:"text",text:`Analyze this food for a ${profile.age}yo ${profile.gender} weighing ${profile.weight}kg. Return ONLY valid JSON no markdown: {"foodName":"...","totalCalories":0,"protein":0,"carbs":0,"fat":0,"fiber":0,"servingSize":"...","healthScore":0,"suggestions":[{"icon":"🥗","text":"..."}],"exercises":[{"name":"...","duration":"...","calories":0}]}`}]:`Analyze "${textFood}" for a ${profile.age}yo ${profile.gender} weighing ${profile.weight}kg. Return ONLY valid JSON: {"foodName":"...","totalCalories":0,"protein":0,"carbs":0,"fat":0,"fiber":0,"servingSize":"...","healthScore":0,"suggestions":[{"icon":"🥗","text":"..."}],"exercises":[{"name":"...","duration":"...","calories":0}]}`;const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":process.env.REACT_APP_ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content}]})});const data=await res.json();if(data.error)throw new Error(data.error.message);const txt=data.content.map(i=>i.text||"").join("");setResult(JSON.parse(txt.replace(/```json|```/g,"").trim()));}catch(err){setError("Error: "+err.message);}setLoading(false);};
+  const analyze=async()=>{if(!imgB64&&!textFood)return;setLoading(true);setError(null);try{const content=imgB64?[{type:"image",source:{type:"base64",media_type:"image/jpeg",data:imgB64}},{type:"text",text:`Analyze this food for a ${profile.age}yo ${profile.gender} weighing ${profile.weight}kg. Return ONLY valid JSON no markdown: {"foodName":"...","totalCalories":0,"protein":0,"carbs":0,"fat":0,"fiber":0,"servingSize":"...","healthScore":0,"suggestions":[{"icon":"🥗","text":"..."}],"exercises":[{"name":"...","duration":"...","calories":0}]}`}]:`Analyze "${textFood}" for a ${profile.age}yo ${profile.gender} weighing ${profile.weight}kg. Return ONLY valid JSON: {"foodName":"...","totalCalories":0,"protein":0,"carbs":0,"fat":0,"fiber":0,"servingSize":"...","healthScore":0,"suggestions":[{"icon":"🥗","text":"..."}],"exercises":[{"name":"...","duration":"...","calories":0}]}`;const res=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content})});const data=await res.json();if(data.error)throw new Error(data.error.message);const txt=data.content.map(i=>i.text||"").join("");setResult(JSON.parse(txt.replace(/```json|```/g,"").trim()));}catch(err){setError("Error: "+err.message);}setLoading(false);};
 
   const logMeal=async(meal)=>{const m=meal||result;if(!m)return;const entry={...m,time:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})};setConsumed(c=>c+m.totalCalories);setMealLog(l=>[...l,entry]);setAllHistory(h=>[...h,entry]);if(uid)await addMealToHistory(uid,entry);if(!meal){setResult(null);setImage(null);setImgB64(null);setTextFood("");}};
 
@@ -237,7 +296,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut}){
           <div style={{display:"flex",gap:5}}>{Array.from({length:8}).map((_,i)=>(<div key={i} onClick={()=>setWater(i+1)} style={{flex:1,height:8,borderRadius:99,background:i<water?`linear-gradient(135deg,${T.blue},#2a7fc8)`:"#1a1a28",cursor:"pointer",transition:"all .25s",boxShadow:i<water?`0 0 8px ${T.blue}25`:"none"}}/>))}</div>
         </Card>
         {/* Meal Log */}
-        {mealLog.length===0?(<Card style={{textAlign:"center",padding:"30px 20px"}}><div style={{width:56,height:56,borderRadius:18,background:"#16162a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,margin:"0 auto 14px",border:`1px solid ${T.border}`}}>🍽️</div><p style={{fontSize:14,marginBottom:14,color:T.muted}}>No meals logged yet.</p><Btn onClick={()=>setTab("analyze")}>📸 Analyze Your First Meal</Btn></Card>):(<Card><CardTitle icon="🍴">Meals Today</CardTitle>{mealLog.map((m,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 0",borderBottom:i<mealLog.length-1?`1px solid ${T.border}`:"none"}}><div><p style={{fontSize:13,fontWeight:700,marginBottom:3}}>{m.foodName}</p><p style={{fontSize:11,color:T.muted,fontWeight:500}}>{m.time}</p></div><span style={{fontSize:13,fontWeight:800,color:T.accent,background:`${T.accent}10`,padding:"4px 10px",borderRadius:8}}>{m.totalCalories} kcal</span></div>))}</Card>)}
+        {mealLog.length===0?(<Card style={{textAlign:"center",padding:"30px 20px"}}><div style={{width:56,height:56,borderRadius:18,background:"#16162a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,margin:"0 auto 14px",border:`1px solid ${T.border}`}}>🍽️</div><p style={{fontSize:14,marginBottom:14,color:T.muted}}>No meals logged yet.</p><Btn onClick={()=>setTab("analyze")}>📸 Analyze Your First Meal</Btn></Card>):(<Card><CardTitle icon="🍴">Meals Today</CardTitle>{mealLog.map((m,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 0",borderBottom:i<mealLog.length-1?`1px solid ${T.border}`:"none"}}><div><p style={{fontSize:13,fontWeight:700,marginBottom:3}}>{m.foodName}</p><p style={{fontSize:11,color:T.muted,fontWeight:500}}>{m.time}</p></div><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:13,fontWeight:800,color:T.accent,background:`${T.accent}10`,padding:"4px 10px",borderRadius:8}}>{m.totalCalories} kcal</span><button onClick={()=>{setConsumed(c=>Math.max(0,c-m.totalCalories));setMealLog(l=>l.filter((_,j)=>j!==i));}} style={{background:"none",border:`1px solid ${T.danger}25`,borderRadius:8,color:T.danger,fontSize:11,padding:"4px 8px",cursor:"pointer",fontFamily:"inherit",fontWeight:600,opacity:0.7,transition:"opacity .2s"}}>✕</button></div></div>))}</Card>)}
       </>)}
 
       {tab==="progress"&&(<>
@@ -261,12 +320,12 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut}){
         <Card style={{padding:"20px"}}>
           <CardTitle icon="📊">7-Day Calorie Trend</CardTitle>
           <div style={{display:"flex",alignItems:"flex-end",gap:7,height:110,marginBottom:10,padding:"0 4px"}}>
-            {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>{const cal=weekData[i]?.cal||0;const max=Math.max(goal*1.2,...weekData.map(x=>x.cal||0));const h=cal>0?Math.max((cal/max)*95,10):0;const over=cal>goal;const today=i===new Date().getDay()-1;return(<div key={d} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+            {weekData.map((wd,i)=>{const cal=wd.cal||0;const max=Math.max(goal*1.2,...weekData.map(x=>x.cal||0));const h=cal>0?Math.max((cal/max)*95,10):0;const over=cal>goal;return(<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
               <div style={{fontSize:9,color:cal>0?T.accent:T.muted,fontWeight:700}}>{cal>0?cal:""}</div>
               <div style={{width:"100%",height:95,display:"flex",alignItems:"flex-end"}}>
-                <div style={{width:"100%",height:`${h}px`,borderRadius:"8px 8px 4px 4px",background:h===0?"#1a1a28":over?`linear-gradient(180deg,${T.danger},${T.danger}66)`:`linear-gradient(180deg,${T.accent},${T.accent}55)`,transition:"height .8s cubic-bezier(0.16,1,0.3,1)",boxShadow:cal>0?`0 0 12px ${over?T.danger:T.accent}20`:"none",border:today?`1.5px solid ${T.accent}`:"1px solid transparent"}}/>
+                <div style={{width:"100%",height:`${h}px`,borderRadius:"8px 8px 4px 4px",background:h===0?"#1a1a28":over?`linear-gradient(180deg,${T.danger},${T.danger}66)`:`linear-gradient(180deg,${T.accent},${T.accent}55)`,transition:"height .8s cubic-bezier(0.16,1,0.3,1)",boxShadow:cal>0?`0 0 12px ${over?T.danger:T.accent}20`:"none",border:wd.isToday?`1.5px solid ${T.accent}`:"1px solid transparent"}}/>
               </div>
-              <span style={{fontSize:9,color:today?T.accent:T.muted,fontWeight:today?800:500}}>{d}</span>
+              <span style={{fontSize:9,color:wd.isToday?T.accent:T.muted,fontWeight:wd.isToday?800:500}}>{wd.label}</span>
             </div>);})}
           </div>
           <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0 0",borderTop:`1px solid ${T.border}`}}>
