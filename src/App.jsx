@@ -23,7 +23,7 @@ const db             = initializeFirestore(firebaseApp, { experimentalForceLongP
 const googleProvider = new GoogleAuthProvider();
 
 const T={bg:"#08080e",card:"#111118",border:"#1c1c2a",accent:"#00e5a0",accentDim:"#00e5a015",accentGlow:"#00e5a035",orange:"#ff6b35",orangeDim:"#ff6b3515",blue:"#4facfe",blueDim:"#4facfe15",purple:"#a78bfa",purpleDim:"#a78bfa15",text:"#eeeef5",muted:"#777799",danger:"#ff4757"};
-const GS=`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:#08080e;font-family:'DM Sans',sans-serif}@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes slideIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}@keyframes pop{0%{transform:scale(0.82);opacity:0}65%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}@keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.fadeUp{animation:fadeUp .4s ease forwards}.fadeIn{animation:fadeIn .35s ease forwards}.slideIn{animation:slideIn .32s ease forwards}.pop{animation:pop .38s ease forwards}.glow:hover{box-shadow:0 0 28px #00e5a040,0 0 8px #00e5a020;transform:translateY(-2px)}.ripple:active{transform:scale(0.97)}.upload:hover{border-color:#00e5a0!important;background:#00e5a00c!important}@keyframes ringGlow{0%,100%{filter:drop-shadow(0 0 6px #00e5a030)}50%{filter:drop-shadow(0 0 14px #00e5a050)}}@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}.ring-glow{animation:ringGlow 3s ease-in-out infinite}.spin{animation:spin 1s linear infinite}@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#1c1c2a;border-radius:99px}@keyframes countUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes pulseGlow{0%,100%{box-shadow:0 0 12px #00e5a030,0 4px 24px #00e5a015}50%{box-shadow:0 0 24px #00e5a050,0 4px 32px #00e5a030}}@keyframes staggerIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.01)}}@keyframes fillRing{from{stroke-dashoffset:var(--ring-circumference)}to{stroke-dashoffset:var(--ring-target)}}@keyframes bouncePop{0%{transform:scale(0.7);opacity:0}50%{transform:scale(1.15)}75%{transform:scale(0.95)}100%{transform:scale(1);opacity:1}}@keyframes logoPulse{0%,85%,100%{transform:scale(1)}90%{transform:scale(1.12)}95%{transform:scale(0.96)}}@keyframes bobFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes phaseSlide{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes barGrow{from{height:0}to{height:var(--bar-h)}}@keyframes shimmerRing{0%{stroke-opacity:0.6}50%{stroke-opacity:1}100%{stroke-opacity:0.6}}.breathe{animation:breathe 3s ease-in-out infinite}.bounce-pop{animation:bouncePop .5s ease forwards}.logo-pulse{animation:logoPulse 8s ease-in-out infinite}.bob-float{animation:bobFloat 2s ease-in-out infinite}.bar-grow{animation:barGrow .8s cubic-bezier(0.16,1,0.3,1) forwards}.shimmer-ring{animation:shimmerRing 2s ease-in-out infinite}.pulse-glow{animation:pulseGlow 2s ease-in-out infinite}@keyframes floatChaos0{0%,100%{transform:rotate(-15deg) translateY(0)}50%{transform:rotate(-10deg) translateY(-6px)}}@keyframes floatChaos1{0%,100%{transform:rotate(10deg) translateY(0)}50%{transform:rotate(15deg) translateY(-8px)}}@keyframes floatChaos2{0%,100%{transform:rotate(-5deg) translateY(0)}50%{transform:rotate(5deg) translateY(-5px)}}@keyframes lineGlow{0%,100%{box-shadow:0 0 4px #00e5a040,0 0 12px #00e5a020}50%{box-shadow:0 0 14px #00e5a060,0 0 28px #00e5a030}}@keyframes floatUnified{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes labelPulse{0%,100%{opacity:0.7}50%{opacity:1}}@keyframes glowBreath{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.15)}}@keyframes breatheDark{0%,100%{background:radial-gradient(circle,transparent 30%,rgba(0,0,0,0.4) 100%)}50%{background:radial-gradient(circle,transparent 25%,rgba(0,0,0,0.5) 100%)}}@keyframes rotateIcon{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}@keyframes pulseDivider{0%,100%{box-shadow:0 0 6px #00e5a030,0 0 18px #00e5a015;opacity:0.7}50%{box-shadow:0 0 16px #00e5a060,0 0 36px #00e5a030;opacity:1}}@keyframes fadeStagger{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes glowPulse{0%,100%{box-shadow:0 0 30px #00e5a020,0 0 60px #00e5a010}50%{box-shadow:0 0 50px #00e5a040,0 0 80px #00e5a020}}`;
+const GS=`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:#08080e;font-family:'DM Sans',sans-serif}@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes slideIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}@keyframes pop{0%{transform:scale(0.82);opacity:0}65%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}@keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.fadeUp{animation:fadeUp .4s ease forwards}.fadeIn{animation:fadeIn .35s ease forwards}.slideIn{animation:slideIn .32s ease forwards}.pop{animation:pop .38s ease forwards}.glow:hover{box-shadow:0 0 28px #00e5a040,0 0 8px #00e5a020;transform:translateY(-2px)}.ripple:active{transform:scale(0.97)}.upload:hover{border-color:#00e5a0!important;background:#00e5a00c!important}@keyframes ringGlow{0%,100%{filter:drop-shadow(0 0 6px #00e5a030)}50%{filter:drop-shadow(0 0 14px #00e5a050)}}@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}.ring-glow{animation:ringGlow 3s ease-in-out infinite}.spin{animation:spin 1s linear infinite}@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#1c1c2a;border-radius:99px}@keyframes countUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes pulseGlow{0%,100%{box-shadow:0 0 12px #00e5a030,0 4px 24px #00e5a015}50%{box-shadow:0 0 24px #00e5a050,0 4px 32px #00e5a030}}@keyframes staggerIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.01)}}@keyframes fillRing{from{stroke-dashoffset:var(--ring-circumference)}to{stroke-dashoffset:var(--ring-target)}}@keyframes bouncePop{0%{transform:scale(0.7);opacity:0}50%{transform:scale(1.15)}75%{transform:scale(0.95)}100%{transform:scale(1);opacity:1}}@keyframes logoPulse{0%,85%,100%{transform:scale(1)}90%{transform:scale(1.12)}95%{transform:scale(0.96)}}@keyframes bobFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes phaseSlide{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes barGrow{from{height:0}to{height:var(--bar-h)}}@keyframes shimmerRing{0%{stroke-opacity:0.6}50%{stroke-opacity:1}100%{stroke-opacity:0.6}}.breathe{animation:breathe 3s ease-in-out infinite}.bounce-pop{animation:bouncePop .5s ease forwards}.logo-pulse{animation:logoPulse 8s ease-in-out infinite}.bob-float{animation:bobFloat 2s ease-in-out infinite}.bar-grow{animation:barGrow .8s cubic-bezier(0.16,1,0.3,1) forwards}.shimmer-ring{animation:shimmerRing 2s ease-in-out infinite}.pulse-glow{animation:pulseGlow 2s ease-in-out infinite}@keyframes floatChaos0{0%,100%{transform:rotate(-15deg) translateY(0)}50%{transform:rotate(-10deg) translateY(-6px)}}@keyframes floatChaos1{0%,100%{transform:rotate(10deg) translateY(0)}50%{transform:rotate(15deg) translateY(-8px)}}@keyframes floatChaos2{0%,100%{transform:rotate(-5deg) translateY(0)}50%{transform:rotate(5deg) translateY(-5px)}}@keyframes lineGlow{0%,100%{box-shadow:0 0 4px #00e5a040,0 0 12px #00e5a020}50%{box-shadow:0 0 14px #00e5a060,0 0 28px #00e5a030}}@keyframes floatUnified{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes labelPulse{0%,100%{opacity:0.7}50%{opacity:1}}@keyframes glowBreath{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.15)}}@keyframes breatheDark{0%,100%{background:radial-gradient(circle,transparent 30%,rgba(0,0,0,0.4) 100%)}50%{background:radial-gradient(circle,transparent 25%,rgba(0,0,0,0.5) 100%)}}@keyframes rotateIcon{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}@keyframes lockBounce{0%{transform:scale(1)}30%{transform:scale(1.25)}60%{transform:scale(0.9)}100%{transform:scale(1)}}@keyframes lockGlowPulse{0%,100%{box-shadow:0 0 20px #00e5a015,0 0 40px #00e5a010}50%{box-shadow:0 0 35px #00e5a030,0 0 60px #00e5a020}}@keyframes shimmerSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes nudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}@keyframes tooltipFade{0%{opacity:0;transform:translateY(-4px)}15%{opacity:1;transform:translateY(0)}85%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(4px)}}@keyframes unlockPulse{0%{transform:scale(0);opacity:0.8}100%{transform:scale(4);opacity:0}}@keyframes pillPop{from{transform:scale(0.85);opacity:0}to{transform:scale(1);opacity:1}}@keyframes fogIn{from{backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px)}to{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}}@keyframes pulseDivider{0%,100%{box-shadow:0 0 6px #00e5a030,0 0 18px #00e5a015;opacity:0.7}50%{box-shadow:0 0 16px #00e5a060,0 0 36px #00e5a030;opacity:1}}@keyframes fadeStagger{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes glowPulse{0%,100%{box-shadow:0 0 30px #00e5a020,0 0 60px #00e5a010}50%{box-shadow:0 0 50px #00e5a040,0 0 80px #00e5a020}}`;
 
 const calcGoal=(p)=>{if(!p)return 2000;const w=parseFloat(p.weight),h=parseFloat(p.height),a=parseFloat(p.age);if(!w||!h||!a)return 2000;const bmr=p.gender==="Male"?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161;const act={sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very_active:1.9};const def={lose_fast:-750,lose:-500,lose_slow:-250,maintain:0,gain:300};return Math.round(bmr*(act[p.activity]||1.375)+(def[p.goal]||-500));};
 const TODAY=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
@@ -205,6 +205,9 @@ function Onboarding({onDone}){
   const resumeTimer=useRef(null);
   const containerRef=useRef(null);
   const navy='#090912';
+  const[unlocking,setUnlocking]=useState(false);
+  const[showTooltip,setShowTooltip]=useState(false);
+  const[nudging,setNudging]=useState(false);
 
   const startAutoAdvance=()=>{
     clearInterval(autoTimer.current);
@@ -262,6 +265,21 @@ function Onboarding({onDone}){
   const screenW=typeof window!=='undefined'?window.innerWidth:400;
   const visualPos=slide-dragOffset/screenW;
   const goAuth=(mode)=>onDone(mode);
+  const handleSignUp=()=>{
+    if(slide===2&&!unlocking){
+      setUnlocking(true);
+      setTimeout(()=>goAuth("signup"),900);
+    } else {
+      goAuth("signup");
+    }
+  };
+  const handleLockedTap=()=>{
+    if(unlocking)return;
+    setNudging(true);
+    setShowTooltip(true);
+    setTimeout(()=>setNudging(false),300);
+    setTimeout(()=>setShowTooltip(false),1800);
+  };
 
   return(<div ref={containerRef} style={{position:"relative",minHeight:"100vh",background:navy,overflow:"hidden",fontFamily:"'DM Sans',sans-serif",color:T.text,userSelect:"none",touchAction:"pan-y"}}
     onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
@@ -375,22 +393,96 @@ function Onboarding({onDone}){
         </div>
       </div>
 
-      {/* ═══ SLIDE 3 — Sign Up Push ═══ */}
-      <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",transform:`translateX(${(2-slide)*100+dragOffset/screenW*100}%)`,transition:isDragging?'none':'transform .5s cubic-bezier(0.16,1,0.3,1)',padding:"24px 20px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center"}}>
-        {/* Radial glow behind icon */}
-        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:300,height:300,background:"radial-gradient(circle,#00e5a018 0%,transparent 70%)",pointerEvents:"none",animation:"glowPulse 3s ease-in-out infinite"}}/>
-        {/* Rotating app icon */}
-        <div style={{width:100,height:100,borderRadius:28,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:50,marginBottom:24,boxShadow:`0 0 50px ${T.accentGlow}`,animation:"rotateIcon 12s linear infinite",perspective:800,position:"relative",zIndex:1}}>🍽️</div>
-        <h2 style={{fontSize:24,fontWeight:900,marginBottom:12,letterSpacing:"-0.5px",lineHeight:1.3,position:"relative",zIndex:1}}>Your personalised plan is<br/>one step away.</h2>
-        <p style={{fontSize:13,color:T.muted,lineHeight:1.7,maxWidth:310,marginBottom:20,position:"relative",zIndex:1}}>Sign up and get your daily calorie goal, macro targets and a coach built around your body and your goals — in under 60 seconds.</p>
-        <p style={{fontSize:14,color:T.accent,fontWeight:700,position:"relative",zIndex:1}}>It takes 60 seconds. Your first result is instant.</p>
+      {/* ═══ SLIDE 3 — FOMO Locked Preview ═══ */}
+      <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",transform:`translateX(${(2-slide)*100+dragOffset/screenW*100}%)`,transition:isDragging?'none':'transform .5s cubic-bezier(0.16,1,0.3,1)',overflow:"hidden"}}>
+        {/* Headline above blurred area */}
+        <div style={{padding:"16px 20px 10px",textAlign:"center",position:"relative",zIndex:3,background:navy}}>
+          <h2 style={{fontSize:22,fontWeight:900,color:"#fff",marginBottom:6}}>Everything is ready for you.</h2>
+          <p style={{fontSize:13,color:"#a0a0c0"}}>It's all waiting on the other side.</p>
+        </div>
+
+        {/* Fake dashboard background */}
+        <div onClick={handleLockedTap} style={{position:"relative",flex:1,overflow:"hidden",animation:nudging?'nudge .3s ease':'none',cursor:"pointer"}}>
+          {/* Rendered dashboard mockup */}
+          <div style={{padding:"14px 16px 0",background:"linear-gradient(180deg,#0c0c15,#08080e)",opacity:slide===2?1:0,transition:"opacity .4s ease .2s"}}>
+            {/* Header bar */}
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,padding:"8px 12px",background:"rgba(14,14,24,0.9)",borderRadius:12,border:`1px solid ${T.border}`}}>
+              <div style={{width:32,height:32,borderRadius:10,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>🍽️</div>
+              <span style={{fontSize:13,fontWeight:800,color:T.text,flex:1}}>Bitelyze</span>
+              <div style={{background:"linear-gradient(135deg,#2a1a0a,#1a0f05)",border:`1px solid ${T.orange}35`,borderRadius:16,padding:"3px 8px",fontSize:10,color:T.orange,fontWeight:800}}>🔥 1d</div>
+            </div>
+            {/* Calorie ring + stats */}
+            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}>
+              <div style={{position:"relative",flexShrink:0}}>
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="#1a1a28" strokeWidth="8"/>
+                  <circle cx="60" cy="60" r="50" fill="none" stroke={T.accent} strokeWidth="8" strokeDasharray={314} strokeDashoffset={314*0.82} strokeLinecap="round" transform="rotate(-90 60 60)"/>
+                </svg>
+                <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                  <span style={{fontSize:22,fontWeight:900,color:T.accent}}>428</span>
+                  <span style={{fontSize:9,color:T.muted}}>of 2377 kcal</span>
+                </div>
+              </div>
+              <div style={{flex:1,display:"flex",flexDirection:"column",gap:5}}>
+                {[["EATEN","428",T.accent],["REMAINING","1949",T.blue],["GOAL","2377",T.orange]].map(([l,v,c])=>(
+                  <div key={l} style={{background:`${c}08`,border:`1px solid ${c}18`,borderRadius:10,padding:"5px 8px"}}>
+                    <span style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:".4px",fontWeight:600,display:"block"}}>{l}</span>
+                    <span style={{fontSize:16,fontWeight:900,color:c,display:"block"}}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Coach card */}
+            <div style={{padding:"12px 14px",background:`${T.accent}0a`,border:`1px solid ${T.accent}25`,borderRadius:14,marginBottom:12}}>
+              <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:6}}>
+                <div style={{width:28,height:28,borderRadius:8,background:`${T.accent}18`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>🧠</div>
+                <div>
+                  <p style={{fontSize:8,fontWeight:700,color:T.accent,textTransform:"uppercase",letterSpacing:"1px"}}>Your Coach</p>
+                  <p style={{fontSize:11,color:T.text,fontWeight:500}}>Great start today! Keep it up 💪</p>
+                </div>
+              </div>
+            </div>
+            {/* Tab bar */}
+            <div style={{display:"flex",background:"rgba(14,14,24,0.85)",borderRadius:12,padding:3,border:`1px solid ${T.border}`}}>
+              {[["📸","Analyze",true],["📋","Log",false],["📊","Progress",false],["👤","Me",false]].map(([ic,lb,active])=>(
+                <div key={lb} style={{flex:1,padding:"6px 4px",textAlign:"center",opacity:active?1:0.5}}>
+                  <span style={{fontSize:16,display:"block"}}>{ic}</span>
+                  <span style={{fontSize:8,fontWeight:700,color:active?T.accent:T.muted}}>{lb}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Blur + dark overlay */}
+          <div style={{position:"absolute",inset:0,backdropFilter:unlocking?'blur(0px)':'blur(10px)',WebkitBackdropFilter:unlocking?'blur(0px)':'blur(10px)',background:unlocking?'rgba(9,9,18,0)':'rgba(9,9,18,0.5)',transition:unlocking?'all .5s ease':'none',animation:slide===2&&!unlocking?'fogIn .4s ease .2s both':'none',zIndex:1}}>
+            {/* Shimmer sweep */}
+            {!unlocking&&<div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}><div style={{position:"absolute",top:0,left:0,width:"50%",height:"100%",background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.03),transparent)",animation:"shimmerSweep 5s ease-in-out infinite"}}/></div>}
+          </div>
+
+          {/* Lock pill card */}
+          {!unlocking&&<div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:2,animation:slide===2?'pillPop .3s cubic-bezier(0.34,1.56,0.64,1) .4s both':'none'}}>
+            <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid #00e5a050",borderRadius:20,padding:"24px 32px",textAlign:"center",animation:"lockGlowPulse 2.5s ease-in-out infinite",boxShadow:"0 0 40px #00e5a025"}}>
+              <div style={{fontSize:32,marginBottom:12,animation:"lockBounce .6s ease .7s both",display:"inline-block"}}>🔒</div>
+              <p style={{fontSize:18,fontWeight:800,color:"#fff",marginBottom:6}}>Your dashboard is ready.</p>
+              <p style={{fontSize:13,color:"#a0a0c0"}}>Sign up to unlock it.</p>
+            </div>
+            {/* Tooltip on tap */}
+            {showTooltip&&<p style={{fontSize:12,color:T.accent,fontWeight:600,textAlign:"center",marginTop:10,animation:"tooltipFade 1.8s ease both"}}>Sign up to access →</p>}
+          </div>}
+
+          {/* Unlock pulse animation */}
+          {unlocking&&<div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:3}}>
+            <div style={{fontSize:32,animation:"lockBounce .3s ease"}}>🔓</div>
+            <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:80,height:80,borderRadius:"50%",background:T.accent,animation:"unlockPulse .5s ease .15s both",pointerEvents:"none"}}/>
+          </div>}
+        </div>
       </div>
     </div>
 
     {/* ═══ STATIC BOTTOM BUTTONS — always visible ═══ */}
     <div style={{position:"fixed",bottom:0,left:0,right:0,padding:"0 22px 28px",background:`linear-gradient(180deg, transparent 0%, ${navy} 35%)`,zIndex:10,paddingTop:40}}>
       <div style={{maxWidth:340,margin:"0 auto"}}>
-        <button onClick={()=>goAuth("signup")} style={{width:"100%",padding:"15px",borderRadius:14,border:"none",background:T.accent,color:"#000",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit",marginBottom:10,transition:"all .2s",boxShadow:`0 4px 20px ${T.accentGlow}`}}>Sign Up For Free</button>
+        <button onClick={handleSignUp} style={{width:"100%",padding:"15px",borderRadius:14,border:"none",background:T.accent,color:"#000",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit",marginBottom:10,transition:"all .2s",boxShadow:`0 4px 20px ${T.accentGlow}`}}>Sign Up For Free</button>
         <button onClick={()=>goAuth("login")} style={{width:"100%",padding:"14px",borderRadius:14,border:`1.5px solid #333`,background:"transparent",color:"#fff",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit",transition:"all .2s"}}>Log In</button>
       </div>
     </div>
