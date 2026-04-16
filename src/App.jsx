@@ -312,12 +312,12 @@ function Onboarding({onDone}){
           <span key={i} style={{position:"absolute",top:"15%",left:q.x,fontSize:q.s,color:"rgba(255,255,255,0.4)",zIndex:2,animation:`driftUp ${4+i*0.5}s ease-in-out ${q.d}s infinite`,["--rot"]:q.r+"deg",pointerEvents:"none"}}>?</span>
         ))}
 
-        {/* Calorie pill labels over food — positioned to match actual photo */}
+        {/* Calorie pill labels — positioned for cover/center crop on phone */}
         {[
-          {label:"Roast Chicken · 1,320 kcal",top:"30%",left:"28%",delay:0.8},
-          {label:"Fries · 365 kcal",top:"68%",left:"10%",delay:1.2},
-          {label:"Fettuccine · 580 kcal",top:"38%",left:"2%",delay:1.6},
-          {label:"Cheese Board · 740 kcal",top:"24%",left:"55%",delay:2.0}
+          {label:"Roast Chicken · 1,320 kcal",top:"32%",left:"20%",delay:0.8},
+          {label:"Fries · 365 kcal",top:"58%",left:"8%",delay:1.2},
+          {label:"Pasta · 580 kcal",top:"20%",left:"5%",delay:1.6},
+          {label:"Cheese · 740 kcal",top:"18%",left:"58%",delay:2.0}
         ].map((p,i)=>(
           <div key={i} style={{position:"absolute",top:p.top,left:p.left,zIndex:2,opacity:slide===0?1:0,animation:slide===0?`fadeIn .4s ease ${p.delay}s both, pillFloat 3s ease-in-out ${1+i*0.3}s infinite`:"none"}}>
             <div style={{display:"flex",alignItems:"center",gap:5,background:"rgba(255,255,255,0.92)",borderRadius:20,padding:"3px 8px",boxShadow:"0 2px 12px rgba(0,0,0,0.3)",whiteSpace:"nowrap"}}>
@@ -329,10 +329,9 @@ function Onboarding({onDone}){
         ))}
 
         {/* Bottom text section */}
-        <div style={{position:"absolute",bottom:8,left:0,right:0,padding:"0 22px",zIndex:2}}>
-          <h1 style={{fontSize:22,fontWeight:800,color:"#fff",lineHeight:1.2,marginBottom:6,opacity:slide===0?1:0,animation:slide===0?"fadeUp .5s ease 1.2s both":"none"}}>Do you actually know<br/>what you just ate?</h1>
-          <p style={{fontSize:12,color:"#a0a0c0",marginBottom:4,opacity:slide===0?1:0,animation:slide===0?"fadeUp .5s ease 1.4s both":"none"}}>Most people underestimate their meals by 40%.</p>
-          <p style={{fontSize:12,color:T.accent,fontWeight:600,opacity:slide===0?1:0,animation:slide===0?"fadeUp .5s ease 1.6s both":"none"}}>Bitelyze tells you exactly. Every single meal.</p>
+        <div style={{position:"absolute",bottom:4,left:0,right:0,padding:"0 22px",zIndex:2}}>
+          <h1 style={{fontSize:20,fontWeight:800,color:"#fff",lineHeight:1.2,marginBottom:4,opacity:slide===0?1:0,animation:slide===0?"fadeUp .5s ease 1.2s both":"none"}}>Do you actually know what you just ate?</h1>
+          <p style={{fontSize:12,color:T.accent,fontWeight:600,opacity:slide===0?1:0,animation:slide===0?"fadeUp .5s ease 1.4s both":"none"}}>Bitelyze tells you exactly. Every single meal.</p>
         </div>
       </div>
 
