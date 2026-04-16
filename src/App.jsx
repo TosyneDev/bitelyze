@@ -394,88 +394,85 @@ function Onboarding({onDone}){
       </div>
 
       {/* ═══ SLIDE 3 — FOMO Locked Preview ═══ */}
-      <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",transform:`translateX(${(2-slide)*100+dragOffset/screenW*100}%)`,transition:isDragging?'none':'transform .5s cubic-bezier(0.16,1,0.3,1)',overflow:"hidden"}}>
-        {/* Headline above blurred area */}
-        <div style={{padding:"16px 20px 10px",textAlign:"center",position:"relative",zIndex:3,background:navy}}>
-          <h2 style={{fontSize:22,fontWeight:900,color:"#fff",marginBottom:6}}>Everything is ready for you.</h2>
-          <p style={{fontSize:13,color:"#a0a0c0"}}>It's all waiting on the other side.</p>
-        </div>
+      <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",transform:`translateX(${(2-slide)*100+dragOffset/screenW*100}%)`,transition:isDragging?'none':'transform .5s cubic-bezier(0.16,1,0.3,1)',overflow:"hidden",display:"flex",flexDirection:"column"}}>
 
-        {/* Fake dashboard background */}
-        <div onClick={handleLockedTap} style={{position:"relative",flex:1,overflow:"hidden",animation:nudging?'nudge .3s ease':'none',cursor:"pointer"}}>
-          {/* Rendered dashboard mockup */}
-          <div style={{padding:"14px 16px 0",background:"linear-gradient(180deg,#0c0c15,#08080e)",opacity:slide===2?1:0,transition:"opacity .4s ease .2s"}}>
-            {/* Header bar */}
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,padding:"8px 12px",background:"rgba(14,14,24,0.9)",borderRadius:12,border:`1px solid ${T.border}`}}>
-              <div style={{width:32,height:32,borderRadius:10,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>🍽️</div>
-              <span style={{fontSize:13,fontWeight:800,color:T.text,flex:1}}>Bitelyze</span>
-              <div style={{background:"linear-gradient(135deg,#2a1a0a,#1a0f05)",border:`1px solid ${T.orange}35`,borderRadius:16,padding:"3px 8px",fontSize:10,color:T.orange,fontWeight:800}}>🔥 1d</div>
-            </div>
-            {/* Calorie ring + stats */}
-            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}>
-              <div style={{position:"relative",flexShrink:0}}>
-                <svg width="120" height="120" viewBox="0 0 120 120">
-                  <circle cx="60" cy="60" r="50" fill="none" stroke="#1a1a28" strokeWidth="8"/>
-                  <circle cx="60" cy="60" r="50" fill="none" stroke={T.accent} strokeWidth="8" strokeDasharray={314} strokeDashoffset={314*0.82} strokeLinecap="round" transform="rotate(-90 60 60)"/>
-                </svg>
-                <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-                  <span style={{fontSize:22,fontWeight:900,color:T.accent}}>428</span>
-                  <span style={{fontSize:9,color:T.muted}}>of 2377 kcal</span>
-                </div>
-              </div>
-              <div style={{flex:1,display:"flex",flexDirection:"column",gap:5}}>
-                {[["EATEN","428",T.accent],["REMAINING","1949",T.blue],["GOAL","2377",T.orange]].map(([l,v,c])=>(
-                  <div key={l} style={{background:`${c}08`,border:`1px solid ${c}18`,borderRadius:10,padding:"5px 8px"}}>
-                    <span style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:".4px",fontWeight:600,display:"block"}}>{l}</span>
-                    <span style={{fontSize:16,fontWeight:900,color:c,display:"block"}}>{v}</span>
-                  </div>
-                ))}
+        {/* === Layer 1: Dashboard mockup (fills entire slide) === */}
+        <div style={{position:"absolute",inset:0,padding:"14px 16px 0",background:"linear-gradient(180deg,#0c0c15,#08080e)",opacity:slide===2?1:0,transition:"opacity .4s ease .2s"}} onClick={handleLockedTap}>
+          {/* Header bar */}
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,padding:"8px 12px",background:"rgba(14,14,24,0.9)",borderRadius:12,border:`1px solid ${T.border}`}}>
+            <div style={{width:32,height:32,borderRadius:10,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>🍽️</div>
+            <span style={{fontSize:13,fontWeight:800,color:T.text,flex:1}}>Bitelyze</span>
+            <div style={{background:"linear-gradient(135deg,#2a1a0a,#1a0f05)",border:`1px solid ${T.orange}35`,borderRadius:16,padding:"3px 8px",fontSize:10,color:T.orange,fontWeight:800}}>🔥 1d</div>
+          </div>
+          {/* Calorie ring + stats */}
+          <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}>
+            <div style={{position:"relative",flexShrink:0}}>
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="#1a1a28" strokeWidth="8"/>
+                <circle cx="60" cy="60" r="50" fill="none" stroke={T.accent} strokeWidth="8" strokeDasharray={314} strokeDashoffset={314*0.82} strokeLinecap="round" transform="rotate(-90 60 60)"/>
+              </svg>
+              <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                <span style={{fontSize:22,fontWeight:900,color:T.accent}}>428</span>
+                <span style={{fontSize:9,color:T.muted}}>of 2377 kcal</span>
               </div>
             </div>
-            {/* Coach card */}
-            <div style={{padding:"12px 14px",background:`${T.accent}0a`,border:`1px solid ${T.accent}25`,borderRadius:14,marginBottom:12}}>
-              <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:6}}>
-                <div style={{width:28,height:28,borderRadius:8,background:`${T.accent}18`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>🧠</div>
-                <div>
-                  <p style={{fontSize:8,fontWeight:700,color:T.accent,textTransform:"uppercase",letterSpacing:"1px"}}>Your Coach</p>
-                  <p style={{fontSize:11,color:T.text,fontWeight:500}}>Great start today! Keep it up 💪</p>
-                </div>
-              </div>
-            </div>
-            {/* Tab bar */}
-            <div style={{display:"flex",background:"rgba(14,14,24,0.85)",borderRadius:12,padding:3,border:`1px solid ${T.border}`}}>
-              {[["📸","Analyze",true],["📋","Log",false],["📊","Progress",false],["👤","Me",false]].map(([ic,lb,active])=>(
-                <div key={lb} style={{flex:1,padding:"6px 4px",textAlign:"center",opacity:active?1:0.5}}>
-                  <span style={{fontSize:16,display:"block"}}>{ic}</span>
-                  <span style={{fontSize:8,fontWeight:700,color:active?T.accent:T.muted}}>{lb}</span>
+            <div style={{flex:1,display:"flex",flexDirection:"column",gap:5}}>
+              {[["EATEN","428",T.accent],["REMAINING","1949",T.blue],["GOAL","2377",T.orange]].map(([l,v,c])=>(
+                <div key={l} style={{background:`${c}08`,border:`1px solid ${c}18`,borderRadius:10,padding:"5px 8px"}}>
+                  <span style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:".4px",fontWeight:600,display:"block"}}>{l}</span>
+                  <span style={{fontSize:16,fontWeight:900,color:c,display:"block"}}>{v}</span>
                 </div>
               ))}
             </div>
           </div>
-
-          {/* Blur + dark overlay */}
-          <div style={{position:"absolute",inset:0,backdropFilter:unlocking?'blur(0px)':'blur(10px)',WebkitBackdropFilter:unlocking?'blur(0px)':'blur(10px)',background:unlocking?'rgba(9,9,18,0)':'rgba(9,9,18,0.5)',transition:unlocking?'all .5s ease':'none',animation:slide===2&&!unlocking?'fogIn .4s ease .2s both':'none',zIndex:1}}>
-            {/* Shimmer sweep */}
-            {!unlocking&&<div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}><div style={{position:"absolute",top:0,left:0,width:"50%",height:"100%",background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.03),transparent)",animation:"shimmerSweep 5s ease-in-out infinite"}}/></div>}
+          {/* Coach card */}
+          <div style={{padding:"12px 14px",background:`${T.accent}0a`,border:`1px solid ${T.accent}25`,borderRadius:14,marginBottom:12}}>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <div style={{width:28,height:28,borderRadius:8,background:`${T.accent}18`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>🧠</div>
+              <div>
+                <p style={{fontSize:8,fontWeight:700,color:T.accent,textTransform:"uppercase",letterSpacing:"1px"}}>Your Coach</p>
+                <p style={{fontSize:11,color:T.text,fontWeight:500}}>Great start today! Keep it up 💪</p>
+              </div>
+            </div>
           </div>
-
+          {/* Tab bar */}
+          <div style={{display:"flex",background:"rgba(14,14,24,0.85)",borderRadius:12,padding:3,border:`1px solid ${T.border}`}}>
+            {[["📸","Analyze",true],["📋","Log",false],["📊","Progress",false],["👤","Me",false]].map(([ic,lb,active])=>(
+              <div key={lb} style={{flex:1,padding:"6px 4px",textAlign:"center",opacity:active?1:0.5}}>
+                <span style={{fontSize:16,display:"block"}}>{ic}</span>
+                <span style={{fontSize:8,fontWeight:700,color:active?T.accent:T.muted}}>{lb}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Lock pill card — positioned relative to slide, not dashboard */}
-        {!unlocking&&<div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:12,width:"85%",maxWidth:320,animation:slide===2?'pillPop .3s cubic-bezier(0.34,1.56,0.64,1) .4s both':'none'}} onClick={handleLockedTap}>
-          <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid #00e5a050",borderRadius:20,padding:"24px 32px",textAlign:"center",animation:"lockGlowPulse 2.5s ease-in-out infinite",boxShadow:"0 0 40px #00e5a025"}}>
-            <div style={{fontSize:32,marginBottom:12,animation:"lockBounce .6s ease .7s both",display:"inline-block"}}>🔒</div>
-            <p style={{fontSize:18,fontWeight:800,color:"#fff",marginBottom:6}}>Your dashboard is ready.</p>
-            <p style={{fontSize:13,color:"#a0a0c0"}}>Sign up to unlock it.</p>
-          </div>
-          {showTooltip&&<p style={{fontSize:12,color:T.accent,fontWeight:600,textAlign:"center",marginTop:10,animation:"tooltipFade 1.8s ease both"}}>Sign up to access →</p>}
-        </div>}
+        {/* === Layer 2: Blur + dark overlay === */}
+        <div onClick={handleLockedTap} style={{position:"absolute",inset:0,backdropFilter:unlocking?'blur(0px)':'blur(10px)',WebkitBackdropFilter:unlocking?'blur(0px)':'blur(10px)',background:unlocking?'rgba(9,9,18,0)':'rgba(9,9,18,0.5)',transition:unlocking?'all .5s ease':'none',animation:slide===2&&!unlocking?'fogIn .4s ease .2s both':'none',zIndex:1,cursor:"pointer"}}>
+          {!unlocking&&<div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}><div style={{position:"absolute",top:0,left:0,width:"50%",height:"100%",background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.03),transparent)",animation:"shimmerSweep 5s ease-in-out infinite"}}/></div>}
+        </div>
 
-        {/* Unlock pulse animation */}
-        {unlocking&&<div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:13}}>
-          <div style={{fontSize:32,animation:"lockBounce .3s ease"}}>🔓</div>
-          <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:80,height:80,borderRadius:"50%",background:T.accent,animation:"unlockPulse .5s ease .15s both",pointerEvents:"none"}}/>
-        </div>}
+        {/* === Layer 3: Headline + Lock pill (centered via flexbox) === */}
+        <div style={{position:"absolute",inset:0,zIndex:2,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",pointerEvents:"none",animation:nudging?'nudge .3s ease':'none'}}>
+          {/* Headline */}
+          <h2 style={{fontSize:22,fontWeight:900,color:"#fff",marginBottom:6,textAlign:"center"}}>Everything is ready for you.</h2>
+          <p style={{fontSize:13,color:"#a0a0c0",marginBottom:24,textAlign:"center"}}>It's all waiting on the other side.</p>
+
+          {/* Lock pill */}
+          {!unlocking&&<div style={{pointerEvents:"auto",width:"85%",maxWidth:320,animation:slide===2?'pillPop .3s cubic-bezier(0.34,1.56,0.64,1) .4s both':'none'}} onClick={handleLockedTap}>
+            <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid #00e5a050",borderRadius:20,padding:"24px 32px",textAlign:"center",animation:"lockGlowPulse 2.5s ease-in-out infinite",boxShadow:"0 0 40px #00e5a025"}}>
+              <div style={{fontSize:32,marginBottom:12,animation:"lockBounce .6s ease .7s both",display:"inline-block"}}>🔒</div>
+              <p style={{fontSize:18,fontWeight:800,color:"#fff",marginBottom:6}}>Your dashboard is ready.</p>
+              <p style={{fontSize:13,color:"#a0a0c0"}}>Sign up to unlock it.</p>
+            </div>
+            {showTooltip&&<p style={{fontSize:12,color:T.accent,fontWeight:600,textAlign:"center",marginTop:10,animation:"tooltipFade 1.8s ease both"}}>Sign up to access →</p>}
+          </div>}
+
+          {/* Unlock pulse */}
+          {unlocking&&<div style={{position:"relative",pointerEvents:"none"}}>
+            <div style={{fontSize:32,textAlign:"center",animation:"lockBounce .3s ease"}}>🔓</div>
+            <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:80,height:80,borderRadius:"50%",background:T.accent,animation:"unlockPulse .5s ease .15s both"}}/>
+          </div>}
+        </div>
       </div>
     </div>
 
