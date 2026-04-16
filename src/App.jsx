@@ -329,7 +329,7 @@ function Onboarding({onDone}){
         </div>
 
         {/* Text area — sits below image, above buttons */}
-        <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"0 22px",background:navy}}>
+        <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"flex-start",padding:"12px 22px 0",background:navy}}>
           <h1 style={{fontSize:22,fontWeight:800,color:"#fff",lineHeight:1.25,marginBottom:6,opacity:slide===0?1:0,animation:slide===0?"fadeUp .5s ease 1.2s both":"none"}}>Do you actually know<br/>what you just ate?</h1>
           <p style={{fontSize:13,color:T.accent,fontWeight:600,opacity:slide===0?1:0,animation:slide===0?"fadeUp .5s ease 1.4s both":"none"}}>Bitelyze tells you exactly. Every single meal.</p>
         </div>
