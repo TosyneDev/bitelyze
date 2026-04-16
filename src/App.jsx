@@ -557,7 +557,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut}){
     <div style={{padding:"14px 18px 0",background:"linear-gradient(180deg,rgba(14,14,24,0.95),rgba(12,12,19,0.9))",borderBottom:`1px solid ${T.border}`,position:"sticky",top:0,zIndex:10,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)"}}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
         <div className="logo-pulse" style={{width:42,height:42,borderRadius:14,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:`0 4px 16px ${T.accentGlow}`,flexShrink:0}}>🍽️</div>
-        <div style={{flex:1,textAlign:"center"}}><p style={{fontSize:13,color:T.muted,fontWeight:500,lineHeight:1.4}}>{cm.msg.length>50?cm.msg.slice(0,50)+"...":cm.msg}</p></div>
+        <span style={{fontSize:16,fontWeight:800,color:T.text,flex:1}}>Bitelyze</span>
         <div style={{display:"flex",alignItems:"center",gap:6,background:"linear-gradient(135deg,#2a1a0a,#1a0f05)",border:`1px solid ${T.orange}35`,borderRadius:24,padding:"5px 12px",boxShadow:`0 0 16px ${T.orange}15`,flexShrink:0}}><span style={{fontSize:14}}>🔥</span><span className="bounce-pop" style={{fontSize:13,fontWeight:900,color:T.orange}}>{stats.streak}d</span></div>
         <button onClick={onSignOut} style={{background:"#16162a",border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"7px 12px",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:600,transition:"all .2s",flexShrink:0}}>↩ Out</button>
       </div>
@@ -586,17 +586,17 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut}){
             <span style={{fontSize:11,color:T.muted,marginTop:3,fontWeight:500}}>of {goal} kcal</span>
           </div>
         </div>
-        <div style={{flex:1,display:"flex",flexDirection:"column",gap:8}}>
-          {[["Eaten",consumed,T.accent,"🍽️"],["Remaining",Math.max(rem,0),T.blue,"🎯"],["Goal",goal,T.orange,"⚡"]].map(([l,v,c,ic])=>(<div key={l} style={{display:"flex",alignItems:"center",gap:10,background:`${c}08`,border:`1px solid ${c}18`,borderRadius:14,padding:"10px 12px"}}>
-            <span style={{fontSize:14}}>{ic}</span>
+        <div style={{flex:1,display:"flex",flexDirection:"column",gap:6}}>
+          {[["Eaten",consumed,T.accent,"🍽️"],["Remaining",Math.max(rem,0),T.blue,"🎯"],["Goal",goal,T.orange,"⚡"]].map(([l,v,c,ic])=>(<div key={l} style={{display:"flex",alignItems:"center",gap:8,background:l==="Goal"?"#1a1208":`${c}08`,border:`1px solid ${l==="Goal"?T.orange+"40":c+"18"}`,borderRadius:12,padding:"7px 10px"}}>
+            <span style={{fontSize:12}}>{ic}</span>
             <div style={{flex:1}}>
-              <span style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:".4px",fontWeight:600,display:"block"}}>{l}</span>
-              <span style={{fontSize:17,fontWeight:900,color:c,display:"block",letterSpacing:"-0.02em"}}>{v}</span>
+              <span style={{fontSize:10,color:T.muted,textTransform:"uppercase",letterSpacing:".4px",fontWeight:600,display:"block",lineHeight:1}}>{l}</span>
+              <span style={{fontSize:20,fontWeight:900,color:c,display:"block",letterSpacing:"-0.02em",lineHeight:1.3}}>{v}</span>
             </div>
           </div>))}
         </div>
       </div>
-      {saving&&<p style={{fontSize:10,color:T.muted,textAlign:"center",marginTop:8}}>saving...</p>}
+      {/* saving indicator removed — saves silently */}
     </div>
 
     {/* ── Coach Card with swipeable tips ── */}
@@ -617,9 +617,9 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut}){
     <div style={{display:"flex",margin:"14px 16px 0",background:"rgba(14,14,24,0.85)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",borderRadius:16,padding:4,border:`1px solid ${T.border}`,position:"relative",boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
       {/* Sliding indicator */}
       <div style={{position:"absolute",top:4,left:`calc(${activeTabIdx*25}% + 4px)`,width:"calc(25% - 4px)",height:"calc(100% - 8px)",background:`linear-gradient(135deg,${T.accent}18,${T.accent}08)`,borderRadius:12,transition:"left .3s cubic-bezier(0.16,1,0.3,1)",boxShadow:`0 0 12px ${T.accent}15,inset 0 1px 0 rgba(255,255,255,0.04)`,pointerEvents:"none"}}/>
-      {[["analyze","📸","Analyze"],["log","📋","Log"],["progress","📊","Progress"],["me","👤","Me"]].map(([k,ic,lb])=>(<button key={k} onClick={()=>setTab(k)} style={{flex:1,padding:"10px 4px",border:"none",background:"transparent",color:tab===k?T.accent:T.muted,fontSize:tab===k?11:18,fontWeight:700,cursor:"pointer",borderRadius:12,transition:"all .25s cubic-bezier(0.16,1,0.3,1)",fontFamily:"inherit",position:"relative",zIndex:1,opacity:tab===k?1:0.6,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-        <span style={{fontSize:tab===k?18:16,transition:"font-size .25s ease",transform:tab===k?"scale(1.15)":"scale(1)",display:"inline-block"}}>{ic}</span>
-        {tab===k&&<span style={{fontSize:10,fontWeight:700,color:T.accent}}>{lb}</span>}
+      {[["analyze","📸","Analyze"],["log","📋","Log"],["progress","📊","Progress"],["me","👤","Me"]].map(([k,ic,lb])=>(<button key={k} onClick={()=>setTab(k)} style={{flex:1,padding:"8px 4px",border:"none",background:"transparent",color:tab===k?T.accent:T.muted,fontWeight:700,cursor:"pointer",borderRadius:12,transition:"all .25s cubic-bezier(0.16,1,0.3,1)",fontFamily:"inherit",position:"relative",zIndex:1,opacity:tab===k?1:0.5,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+        <span style={{fontSize:20,display:"inline-block"}}>{ic}</span>
+        <span style={{fontSize:10,fontWeight:700,color:tab===k?T.accent:T.muted}}>{lb}</span>
       </button>))}
     </div>
 
