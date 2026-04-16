@@ -303,7 +303,7 @@ function Onboarding({onDone}){
         {/* Food image area — takes up top 60% */}
         <div style={{position:"relative",flex:"0 0 60%",overflow:"hidden"}}>
           <div style={{position:"absolute",inset:0,backgroundImage:"url(/food-spread.jpg)",backgroundSize:"cover",backgroundPosition:"center",opacity:slide===0?1:0,transition:"opacity .5s ease"}}/>
-          <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg, rgba(9,9,18,0.1) 0%, rgba(9,9,18,0.3) 60%, rgba(9,9,18,1) 100%)"}}/>
+          <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg, rgba(9,9,18,0.05) 0%, rgba(9,9,18,0.15) 40%, rgba(9,9,18,0.5) 70%, rgba(9,9,18,0.85) 85%, #090912 100%)"}}/>
           <div style={{position:"absolute",inset:0,animation:"borderGlow 4s ease-in-out infinite",pointerEvents:"none",zIndex:3}}/>
 
           {/* Floating question marks */}
