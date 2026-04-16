@@ -459,23 +459,23 @@ function Onboarding({onDone}){
             {!unlocking&&<div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}><div style={{position:"absolute",top:0,left:0,width:"50%",height:"100%",background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.03),transparent)",animation:"shimmerSweep 5s ease-in-out infinite"}}/></div>}
           </div>
 
-          {/* Lock pill card */}
-          {!unlocking&&<div style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:12,animation:slide===2?'pillPop .3s cubic-bezier(0.34,1.56,0.64,1) .4s both':'none'}}>
-            <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid #00e5a050",borderRadius:20,padding:"24px 32px",textAlign:"center",animation:"lockGlowPulse 2.5s ease-in-out infinite",boxShadow:"0 0 40px #00e5a025"}}>
-              <div style={{fontSize:32,marginBottom:12,animation:"lockBounce .6s ease .7s both",display:"inline-block"}}>🔒</div>
-              <p style={{fontSize:18,fontWeight:800,color:"#fff",marginBottom:6}}>Your dashboard is ready.</p>
-              <p style={{fontSize:13,color:"#a0a0c0"}}>Sign up to unlock it.</p>
-            </div>
-            {/* Tooltip on tap */}
-            {showTooltip&&<p style={{fontSize:12,color:T.accent,fontWeight:600,textAlign:"center",marginTop:10,animation:"tooltipFade 1.8s ease both"}}>Sign up to access →</p>}
-          </div>}
-
-          {/* Unlock pulse animation */}
-          {unlocking&&<div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:3}}>
-            <div style={{fontSize:32,animation:"lockBounce .3s ease"}}>🔓</div>
-            <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:80,height:80,borderRadius:"50%",background:T.accent,animation:"unlockPulse .5s ease .15s both",pointerEvents:"none"}}/>
-          </div>}
         </div>
+
+        {/* Lock pill card — positioned relative to slide, not dashboard */}
+        {!unlocking&&<div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:12,width:"85%",maxWidth:320,animation:slide===2?'pillPop .3s cubic-bezier(0.34,1.56,0.64,1) .4s both':'none'}} onClick={handleLockedTap}>
+          <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid #00e5a050",borderRadius:20,padding:"24px 32px",textAlign:"center",animation:"lockGlowPulse 2.5s ease-in-out infinite",boxShadow:"0 0 40px #00e5a025"}}>
+            <div style={{fontSize:32,marginBottom:12,animation:"lockBounce .6s ease .7s both",display:"inline-block"}}>🔒</div>
+            <p style={{fontSize:18,fontWeight:800,color:"#fff",marginBottom:6}}>Your dashboard is ready.</p>
+            <p style={{fontSize:13,color:"#a0a0c0"}}>Sign up to unlock it.</p>
+          </div>
+          {showTooltip&&<p style={{fontSize:12,color:T.accent,fontWeight:600,textAlign:"center",marginTop:10,animation:"tooltipFade 1.8s ease both"}}>Sign up to access →</p>}
+        </div>}
+
+        {/* Unlock pulse animation */}
+        {unlocking&&<div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:13}}>
+          <div style={{fontSize:32,animation:"lockBounce .3s ease"}}>🔓</div>
+          <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:80,height:80,borderRadius:"50%",background:T.accent,animation:"unlockPulse .5s ease .15s both",pointerEvents:"none"}}/>
+        </div>}
       </div>
     </div>
 
