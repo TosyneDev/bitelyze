@@ -23,7 +23,7 @@ const db             = initializeFirestore(firebaseApp, { experimentalForceLongP
 const googleProvider = new GoogleAuthProvider();
 
 const T={bg:"#08080e",card:"#111118",border:"#1c1c2a",accent:"#00e5a0",accentDim:"#00e5a015",accentGlow:"#00e5a035",orange:"#ff6b35",orangeDim:"#ff6b3515",blue:"#4facfe",blueDim:"#4facfe15",purple:"#a78bfa",purpleDim:"#a78bfa15",text:"#eeeef5",muted:"#777799",danger:"#ff4757"};
-const GS=`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:#08080e;font-family:'DM Sans',sans-serif}@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes slideIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}@keyframes pop{0%{transform:scale(0.82);opacity:0}65%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}@keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.fadeUp{animation:fadeUp .4s ease forwards}.fadeIn{animation:fadeIn .35s ease forwards}.slideIn{animation:slideIn .32s ease forwards}.pop{animation:pop .38s ease forwards}.glow:hover{box-shadow:0 0 28px #00e5a040,0 0 8px #00e5a020;transform:translateY(-2px)}.ripple:active{transform:scale(0.97)}.upload:hover{border-color:#00e5a0!important;background:#00e5a00c!important}@keyframes ringGlow{0%,100%{filter:drop-shadow(0 0 6px #00e5a030)}50%{filter:drop-shadow(0 0 14px #00e5a050)}}@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}.ring-glow{animation:ringGlow 3s ease-in-out infinite}.spin{animation:spin 1s linear infinite}@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#1c1c2a;border-radius:99px}@keyframes countUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes pulseGlow{0%,100%{box-shadow:0 0 12px #00e5a030,0 4px 24px #00e5a015}50%{box-shadow:0 0 24px #00e5a050,0 4px 32px #00e5a030}}@keyframes staggerIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.01)}}@keyframes fillRing{from{stroke-dashoffset:var(--ring-circumference)}to{stroke-dashoffset:var(--ring-target)}}@keyframes bouncePop{0%{transform:scale(0.7);opacity:0}50%{transform:scale(1.15)}75%{transform:scale(0.95)}100%{transform:scale(1);opacity:1}}@keyframes logoPulse{0%,85%,100%{transform:scale(1)}90%{transform:scale(1.12)}95%{transform:scale(0.96)}}@keyframes bobFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes phaseSlide{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes barGrow{from{height:0}to{height:var(--bar-h)}}@keyframes shimmerRing{0%{stroke-opacity:0.6}50%{stroke-opacity:1}100%{stroke-opacity:0.6}}.breathe{animation:breathe 3s ease-in-out infinite}.bounce-pop{animation:bouncePop .5s ease forwards}.logo-pulse{animation:logoPulse 8s ease-in-out infinite}.bob-float{animation:bobFloat 2s ease-in-out infinite}.bar-grow{animation:barGrow .8s cubic-bezier(0.16,1,0.3,1) forwards}.shimmer-ring{animation:shimmerRing 2s ease-in-out infinite}.pulse-glow{animation:pulseGlow 2s ease-in-out infinite}@keyframes floatChaos0{0%,100%{transform:rotate(-15deg) translateY(0)}50%{transform:rotate(-10deg) translateY(-6px)}}@keyframes floatChaos1{0%,100%{transform:rotate(10deg) translateY(0)}50%{transform:rotate(15deg) translateY(-8px)}}@keyframes floatChaos2{0%,100%{transform:rotate(-5deg) translateY(0)}50%{transform:rotate(5deg) translateY(-5px)}}@keyframes lineGlow{0%,100%{box-shadow:0 0 4px #00e5a040,0 0 12px #00e5a020}50%{box-shadow:0 0 14px #00e5a060,0 0 28px #00e5a030}}@keyframes floatUnified{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes labelPulse{0%,100%{opacity:0.7}50%{opacity:1}}@keyframes glowBreath{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.15)}}@keyframes breatheDark{0%,100%{background:radial-gradient(circle,transparent 30%,rgba(0,0,0,0.4) 100%)}50%{background:radial-gradient(circle,transparent 25%,rgba(0,0,0,0.5) 100%)}}@keyframes rotateIcon{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}@keyframes lockBounce{0%{transform:scale(1)}30%{transform:scale(1.25)}60%{transform:scale(0.9)}100%{transform:scale(1)}}@keyframes lockGlowPulse{0%,100%{box-shadow:0 0 20px #00e5a015,0 0 40px #00e5a010}50%{box-shadow:0 0 35px #00e5a030,0 0 60px #00e5a020}}@keyframes shimmerSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes nudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}@keyframes tooltipFade{0%{opacity:0;transform:translateY(-4px)}15%{opacity:1;transform:translateY(0)}85%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(4px)}}@keyframes unlockPulse{0%{transform:scale(0);opacity:0.8}100%{transform:scale(4);opacity:0}}@keyframes pillPop{from{transform:scale(0.85);opacity:0}to{transform:scale(1);opacity:1}}@keyframes fogIn{from{backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px)}to{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}}@keyframes pulseDivider{0%,100%{box-shadow:0 0 6px #00e5a030,0 0 18px #00e5a015;opacity:0.7}50%{box-shadow:0 0 16px #00e5a060,0 0 36px #00e5a030;opacity:1}}@keyframes fadeStagger{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes glowPulse{0%,100%{box-shadow:0 0 30px #00e5a020,0 0 60px #00e5a010}50%{box-shadow:0 0 50px #00e5a040,0 0 80px #00e5a020}}`;
+const GS=`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:#08080e;font-family:'DM Sans',sans-serif}@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes slideIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}@keyframes pop{0%{transform:scale(0.82);opacity:0}65%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}@keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.fadeUp{animation:fadeUp .4s ease forwards}.fadeIn{animation:fadeIn .35s ease forwards}.slideIn{animation:slideIn .32s ease forwards}.pop{animation:pop .38s ease forwards}.glow:hover{box-shadow:0 0 28px #00e5a040,0 0 8px #00e5a020;transform:translateY(-2px)}.ripple:active{transform:scale(0.97)}.upload:hover{border-color:#00e5a0!important;background:#00e5a00c!important}@keyframes ringGlow{0%,100%{filter:drop-shadow(0 0 6px #00e5a030)}50%{filter:drop-shadow(0 0 14px #00e5a050)}}@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}.ring-glow{animation:ringGlow 3s ease-in-out infinite}.spin{animation:spin 1s linear infinite}@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#1c1c2a;border-radius:99px}@keyframes countUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes pulseGlow{0%,100%{box-shadow:0 0 12px #00e5a030,0 4px 24px #00e5a015}50%{box-shadow:0 0 24px #00e5a050,0 4px 32px #00e5a030}}@keyframes staggerIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.01)}}@keyframes fillRing{from{stroke-dashoffset:var(--ring-circumference)}to{stroke-dashoffset:var(--ring-target)}}@keyframes bouncePop{0%{transform:scale(0.7);opacity:0}50%{transform:scale(1.15)}75%{transform:scale(0.95)}100%{transform:scale(1);opacity:1}}@keyframes logoPulse{0%,85%,100%{transform:scale(1)}90%{transform:scale(1.12)}95%{transform:scale(0.96)}}@keyframes bobFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes phaseSlide{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes barGrow{from{height:0}to{height:var(--bar-h)}}@keyframes shimmerRing{0%{stroke-opacity:0.6}50%{stroke-opacity:1}100%{stroke-opacity:0.6}}.breathe{animation:breathe 3s ease-in-out infinite}.bounce-pop{animation:bouncePop .5s ease forwards}.logo-pulse{animation:logoPulse 8s ease-in-out infinite}.bob-float{animation:bobFloat 2s ease-in-out infinite}.bar-grow{animation:barGrow .8s cubic-bezier(0.16,1,0.3,1) forwards}.shimmer-ring{animation:shimmerRing 2s ease-in-out infinite}.pulse-glow{animation:pulseGlow 2s ease-in-out infinite}@keyframes floatChaos0{0%,100%{transform:rotate(-15deg) translateY(0)}50%{transform:rotate(-10deg) translateY(-6px)}}@keyframes floatChaos1{0%,100%{transform:rotate(10deg) translateY(0)}50%{transform:rotate(15deg) translateY(-8px)}}@keyframes floatChaos2{0%,100%{transform:rotate(-5deg) translateY(0)}50%{transform:rotate(5deg) translateY(-5px)}}@keyframes lineGlow{0%,100%{box-shadow:0 0 4px #00e5a040,0 0 12px #00e5a020}50%{box-shadow:0 0 14px #00e5a060,0 0 28px #00e5a030}}@keyframes floatUnified{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes labelPulse{0%,100%{opacity:0.7}50%{opacity:1}}@keyframes glowBreath{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.15)}}@keyframes breatheDark{0%,100%{background:radial-gradient(circle,transparent 30%,rgba(0,0,0,0.4) 100%)}50%{background:radial-gradient(circle,transparent 25%,rgba(0,0,0,0.5) 100%)}}@keyframes rotateIcon{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}@keyframes lockBounce{0%{transform:scale(1)}30%{transform:scale(1.25)}60%{transform:scale(0.9)}100%{transform:scale(1)}}@keyframes lockGlowPulse{0%,100%{box-shadow:0 0 20px #00e5a015,0 0 40px #00e5a010}50%{box-shadow:0 0 35px #00e5a030,0 0 60px #00e5a020}}@keyframes shimmerSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes nudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}@keyframes tooltipFade{0%{opacity:0;transform:translateY(-4px)}15%{opacity:1;transform:translateY(0)}85%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(4px)}}@keyframes unlockPulse{0%{transform:scale(0);opacity:0.8}100%{transform:scale(4);opacity:0}}@keyframes pillPop{from{transform:scale(0.85);opacity:0}to{transform:scale(1);opacity:1}}@keyframes fogIn{from{backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px)}to{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}}@keyframes pulseDivider{0%,100%{box-shadow:0 0 6px #00e5a030,0 0 18px #00e5a015;opacity:0.7}50%{box-shadow:0 0 16px #00e5a060,0 0 36px #00e5a030;opacity:1}}@keyframes fadeStagger{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes glowPulse{0%,100%{box-shadow:0 0 30px #00e5a020,0 0 60px #00e5a010}50%{box-shadow:0 0 50px #00e5a040,0 0 80px #00e5a020}}@keyframes driftUp{0%{opacity:0;transform:translateY(20px) rotate(var(--rot,0deg))}15%{opacity:0.4}85%{opacity:0.4}100%{opacity:0;transform:translateY(-80px) rotate(var(--rot,0deg))}}@keyframes pillFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes borderGlow{0%,100%{box-shadow:inset 0 0 60px #00e5a010}50%{box-shadow:inset 0 0 60px #00e5a020}}`;
 
 const calcGoal=(p)=>{if(!p)return 2000;const w=parseFloat(p.weight),h=parseFloat(p.height),a=parseFloat(p.age);if(!w||!h||!a)return 2000;const bmr=p.gender==="Male"?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161;const act={sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very_active:1.9};const def={lose_fast:-750,lose:-500,lose_slow:-250,maintain:0,gain:300};return Math.round(bmr*(act[p.activity]||1.375)+(def[p.goal]||-500));};
 const TODAY=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
@@ -298,76 +298,42 @@ function Onboarding({onDone}){
     {/* Slides container */}
     <div style={{position:"relative",width:"100%",height:"calc(100vh - 180px)",overflow:"hidden"}}>
 
-      {/* ═══ SLIDE 1 — Before & After ═══ */}
-      <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",transform:`translateX(${(0-slide)*100+dragOffset/screenW*100}%)`,transition:isDragging?'none':'transform .5s cubic-bezier(0.16,1,0.3,1)'}}>
-        <div style={{height:'100%',background:navy,position:'relative',overflow:'hidden',display:'flex',flexDirection:'column'}}>
-          <h1 style={{textAlign:'center',fontSize:26,fontWeight:900,color:'#fff',padding:'24px 20px 16px',zIndex:5,position:'relative'}}>The difference is knowing.</h1>
-          <div style={{flex:1,display:'grid',gridTemplateColumns:'1fr 2px 1fr',position:'relative',padding:'0 12px 20px',gap:0,minHeight:0}}>
-            {/* LEFT — WITHOUT */}
-            <div style={{position:'relative',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'14px 8px',background:'#0a0a14',borderRadius:16,overflow:'hidden'}}>
-              <div style={{position:'absolute',inset:0,background:'radial-gradient(circle,transparent 30%,rgba(0,0,0,0.5) 100%)',pointerEvents:'none'}}/>
-              {/* Character — heavier, slouched */}
-              <svg width="80" height="110" viewBox="0 0 80 110" style={{marginBottom:8,filter:'grayscale(0.8) brightness(0.5)',opacity:0.7}}>
-                <circle cx="40" cy="18" r="14" fill="#4a4a5a"/>
-                <ellipse cx="40" cy="58" rx="22" ry="28" fill="#3a3a4a"/>
-                <rect x="14" y="50" width="10" height="30" rx="5" fill="#3a3a4a" transform="rotate(-15 19 50)"/>
-                <rect x="56" y="50" width="10" height="30" rx="5" fill="#3a3a4a" transform="rotate(15 61 50)"/>
-                <rect x="25" y="82" width="11" height="28" rx="5" fill="#3a3a4a"/>
-                <rect x="44" y="82" width="11" height="28" rx="5" fill="#3a3a4a"/>
-                <circle cx="35" cy="16" r="2" fill="#222"/>
-                <circle cx="45" cy="16" r="2" fill="#222"/>
-                <path d="M34 23 Q40 26 46 23" stroke="#555" strokeWidth="1.5" fill="none"/>
-              </svg>
-              {/* Chaotic food icons */}
-              <div style={{display:'flex',gap:3,flexWrap:'wrap',justifyContent:'center',marginBottom:10,position:'relative'}}>
-                {['🍔','🍟','🍕','🍩','🥤','🌮'].map((e,i)=>(
-                  <span key={i} style={{fontSize:14+i*2,opacity:0.5,transform:`rotate(${(i%2?-1:1)*(10+i*5)}deg)`,animation:`floatChaos${i%3} ${2+i*0.3}s ease-in-out infinite`}}>{e}</span>
-                ))}
-              </div>
-              {['❌ Guessing every meal','❌ No idea what\'s working','❌ Same result every week'].map((t,i)=>(
-                <p key={i} style={{fontSize:11,color:'#666',marginBottom:4,textAlign:'center',lineHeight:1.3,animation:`fadeStagger .5s ease ${i*0.15}s both`}}>{t}</p>
-              ))}
-              <p style={{fontSize:9,color:'#444',textTransform:'uppercase',letterSpacing:'1.5px',marginTop:10,fontWeight:700}}>Without Bitelyze</p>
-            </div>
+      {/* ═══ SLIDE 1 — Food Spread with Calorie Labels ═══ */}
+      <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",transform:`translateX(${(0-slide)*100+dragOffset/screenW*100}%)`,transition:isDragging?'none':'transform .5s cubic-bezier(0.16,1,0.3,1)',overflow:"hidden"}}>
+        {/* Food photo background */}
+        <div style={{position:"absolute",inset:0,backgroundImage:"url(/food-spread.jpg)",backgroundSize:"cover",backgroundPosition:"center",opacity:slide===0?1:0,transition:"opacity .5s ease"}}/>
+        {/* Dark gradient overlay */}
+        <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg, rgba(9,9,18,0.15) 0%, rgba(9,9,18,0.4) 50%, rgba(9,9,18,0.92) 80%)"}}/>
+        {/* Mint green inner glow border */}
+        <div style={{position:"absolute",inset:0,animation:"borderGlow 4s ease-in-out infinite",pointerEvents:"none",zIndex:3}}/>
 
-            {/* CENTER DIVIDING LINE */}
-            <div style={{display:'flex',justifyContent:'center',alignItems:'stretch'}}>
-              <div style={{width:2,background:T.accent,boxShadow:'0 0 8px #00e5a040,0 0 20px #00e5a020',animation:'pulseDivider 2s ease-in-out infinite'}}/>
-            </div>
+        {/* Floating question marks */}
+        {[{x:"12%",s:28,d:0,r:-15},{x:"78%",s:22,d:1.2,r:12},{x:"45%",s:36,d:0.6,r:-8},{x:"25%",s:20,d:1.8,r:20},{x:"65%",s:24,d:2.4,r:-10},{x:"88%",s:18,d:0.4,r:15}].map((q,i)=>(
+          <span key={i} style={{position:"absolute",top:"15%",left:q.x,fontSize:q.s,color:"rgba(255,255,255,0.4)",zIndex:2,animation:`driftUp ${4+i*0.5}s ease-in-out ${q.d}s infinite`,["--rot"]:q.r+"deg",pointerEvents:"none"}}>?</span>
+        ))}
 
-            {/* RIGHT — WITH */}
-            <div style={{position:'relative',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'14px 8px',borderRadius:16,overflow:'hidden',background:'radial-gradient(ellipse at 50% 40%,#00e5a010,transparent 70%)'}}>
-              <div style={{position:'relative',marginBottom:8}}>
-                <div style={{position:'absolute',inset:-20,background:'radial-gradient(circle,#00e5a018,transparent 60%)',animation:'glowBreath 4s ease-in-out infinite',pointerEvents:'none'}}/>
-                {/* Character — leaner, upright, vibrant */}
-                <svg width="80" height="110" viewBox="0 0 80 110" style={{position:'relative'}}>
-                  <defs><linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#00e5a0" stopOpacity="0.3"/><stop offset="100%" stopColor="#00b87a" stopOpacity="0.1"/></linearGradient></defs>
-                  <circle cx="40" cy="18" r="14" fill="#e8c4a0"/>
-                  <ellipse cx="40" cy="58" rx="16" ry="26" fill="url(#bodyGrad)" stroke="#00e5a050" strokeWidth="1"/>
-                  <rect x="18" y="46" width="9" height="28" rx="4" fill="#e8c4a0" transform="rotate(-5 22 46)"/>
-                  <rect x="53" y="44" width="9" height="28" rx="4" fill="#e8c4a0" transform="rotate(10 57 44)"/>
-                  <rect x="28" y="82" width="10" height="28" rx="5" fill="#e8c4a0"/>
-                  <rect x="42" y="82" width="10" height="28" rx="5" fill="#e8c4a0"/>
-                  <circle cx="35" cy="16" r="2" fill="#333"/>
-                  <circle cx="45" cy="16" r="2" fill="#333"/>
-                  <path d="M34 22 Q40 27 46 22" stroke="#00e5a0" strokeWidth="1.5" fill="none"/>
-                </svg>
-              </div>
-              {/* Organized food icons with labels */}
-              <div style={{display:'flex',gap:8,justifyContent:'center',marginBottom:10}}>
-                {[['🍔','540'],['🍕','285'],['🍟','320']].map(([e,cal],i)=>(
-                  <div key={i} style={{textAlign:'center',animation:'floatUnified 3s ease-in-out infinite'}}>
-                    <span style={{fontSize:18,display:'block'}}>{e}</span>
-                    <span style={{fontSize:8,color:'#00e5a0',fontWeight:700}}>{cal} kcal</span>
-                  </div>
-                ))}
-              </div>
-              {['✅ Know exactly what you eat','✅ Hitting goals consistently','✅ Seeing results in weeks'].map((t,i)=>(
-                <p key={i} style={{fontSize:11,color:'#00e5a0',marginBottom:4,textAlign:'center',lineHeight:1.3,animation:`fadeStagger .5s ease ${i*0.15}s both`}}>{t}</p>
-              ))}
-              <p style={{fontSize:9,color:'#00e5a0',textTransform:'uppercase',letterSpacing:'1.5px',marginTop:10,fontWeight:700}}>With Bitelyze</p>
+        {/* Calorie pill labels over food */}
+        {[
+          {label:"Whole Chicken · 1,320 kcal",top:"22%",left:"30%",delay:0.8},
+          {label:"Fries · 365 kcal",top:"62%",left:"8%",delay:1.2},
+          {label:"Pasta · 580 kcal",top:"42%",left:"5%",delay:1.6},
+          {label:"Cheese Board · 740 kcal",top:"28%",left:"58%",delay:2.0}
+        ].map((p,i)=>(
+          <div key={i} style={{position:"absolute",top:p.top,left:p.left,zIndex:2,opacity:slide===0?1:0,animation:slide===0?`fadeIn .4s ease ${p.delay}s both, pillFloat 3s ease-in-out ${1+i*0.3}s infinite`:"none"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.92)",borderRadius:20,padding:"4px 10px",boxShadow:"0 2px 12px rgba(0,0,0,0.3)",whiteSpace:"nowrap"}}>
+              <div style={{width:6,height:6,borderRadius:"50%",background:T.accent,flexShrink:0}}/>
+              <span style={{fontSize:11,fontWeight:600,color:"#1a1a2a"}}>{p.label}</span>
             </div>
+            {/* Pointer line */}
+            <div style={{width:1,height:16,background:T.accent,margin:"0 auto",opacity:0.5}}/>
           </div>
+        ))}
+
+        {/* Bottom text section */}
+        <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"0 24px 20px",zIndex:2}}>
+          <h1 style={{fontSize:26,fontWeight:800,color:"#fff",lineHeight:1.2,marginBottom:10,opacity:slide===0?1:0,animation:slide===0?"fadeUp .5s ease 1.2s both":"none"}}>Do you actually know<br/>what you just ate?</h1>
+          <p style={{fontSize:13,color:"#a0a0c0",marginBottom:8,opacity:slide===0?1:0,animation:slide===0?"fadeUp .5s ease 1.4s both":"none"}}>Most people underestimate their meals by 40%.</p>
+          <p style={{fontSize:13,color:T.accent,fontWeight:600,opacity:slide===0?1:0,animation:slide===0?"fadeUp .5s ease 1.6s both":"none"}}>Bitelyze tells you exactly. Every single meal.</p>
         </div>
       </div>
 
