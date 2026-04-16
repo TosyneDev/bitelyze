@@ -376,22 +376,13 @@ function Onboarding({onDone}){
       </div>
 
       {/* ═══ SLIDE 3 — Sign Up Push ═══ */}
-      <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",transform:`translateX(${(2-slide)*100+dragOffset/screenW*100}%)`,transition:isDragging?'none':'transform .5s cubic-bezier(0.16,1,0.3,1)',padding:"24px 20px",display:"flex",flexDirection:"column",alignItems:"center",textAlign:"center"}}>
+      <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",transform:`translateX(${(2-slide)*100+dragOffset/screenW*100}%)`,transition:isDragging?'none':'transform .5s cubic-bezier(0.16,1,0.3,1)',padding:"24px 20px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center"}}>
         {/* Radial glow behind icon */}
-        <div style={{position:"absolute",top:"8%",left:"50%",transform:"translateX(-50%)",width:260,height:260,background:"radial-gradient(circle,#00e5a018 0%,transparent 70%)",pointerEvents:"none",animation:"glowPulse 3s ease-in-out infinite"}}/>
+        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:300,height:300,background:"radial-gradient(circle,#00e5a018 0%,transparent 70%)",pointerEvents:"none",animation:"glowPulse 3s ease-in-out infinite"}}/>
         {/* Rotating app icon */}
-        <div style={{width:100,height:100,borderRadius:28,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:50,marginBottom:20,boxShadow:`0 0 50px ${T.accentGlow}`,animation:"rotateIcon 12s linear infinite",perspective:800,position:"relative",zIndex:1}}>🍽️</div>
-        <h2 style={{fontSize:24,fontWeight:900,marginBottom:10,letterSpacing:"-0.5px",lineHeight:1.25,position:"relative",zIndex:1}}>Your personalised plan is<br/>one step away.</h2>
-        <p style={{fontSize:13,color:T.muted,lineHeight:1.7,maxWidth:310,marginBottom:24,position:"relative",zIndex:1}}>Sign up and get your daily calorie goal, macro targets and a coach built around your body and your goals — in under 60 seconds.</p>
-        {/* Benefit lines */}
-        <div style={{width:"100%",maxWidth:340,marginBottom:20,position:"relative",zIndex:1}}>
-          {[["🎯","A calorie goal calculated for YOUR body"],["📊","Daily macro targets based on YOUR goal"],["🧠","A personal coach that adapts to what you eat"]].map(([icon,text],i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",textAlign:"left"}}>
-              <span style={{fontSize:20,flexShrink:0}}>{icon}</span>
-              <span style={{fontSize:13,color:"#cccce0",fontWeight:500,lineHeight:1.4}}>{text}</span>
-            </div>
-          ))}
-        </div>
+        <div style={{width:100,height:100,borderRadius:28,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:50,marginBottom:24,boxShadow:`0 0 50px ${T.accentGlow}`,animation:"rotateIcon 12s linear infinite",perspective:800,position:"relative",zIndex:1}}>🍽️</div>
+        <h2 style={{fontSize:24,fontWeight:900,marginBottom:12,letterSpacing:"-0.5px",lineHeight:1.3,position:"relative",zIndex:1}}>Your personalised plan is<br/>one step away.</h2>
+        <p style={{fontSize:13,color:T.muted,lineHeight:1.7,maxWidth:310,marginBottom:20,position:"relative",zIndex:1}}>Sign up and get your daily calorie goal, macro targets and a coach built around your body and your goals — in under 60 seconds.</p>
         <p style={{fontSize:14,color:T.accent,fontWeight:700,position:"relative",zIndex:1}}>It takes 60 seconds. Your first result is instant.</p>
       </div>
     </div>
