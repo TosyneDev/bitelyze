@@ -299,17 +299,17 @@ function Onboarding({onDone}){
     <div style={{position:"relative",width:"100%",height:"calc(100vh - 180px)",overflow:"hidden"}}>
 
       {/* ═══ SLIDE 1 — Food Spread with Calorie Labels ═══ */}
-      <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",transform:`translateX(${(0-slide)*100+dragOffset/screenW*100}%)`,transition:isDragging?'none':'transform .5s cubic-bezier(0.16,1,0.3,1)',display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        {/* Food image area — takes up top 60% */}
-        <div style={{position:"relative",flex:"0 0 60%",overflow:"hidden"}}>
-          <div style={{position:"absolute",inset:0,backgroundImage:"url(/food-spread.jpg)",backgroundSize:"cover",backgroundPosition:"center",opacity:slide===0?1:0,transition:"opacity .5s ease"}}/>
-          <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg, rgba(9,9,18,0.05) 0%, rgba(9,9,18,0.15) 40%, rgba(9,9,18,0.5) 70%, rgba(9,9,18,0.85) 85%, #090912 100%)"}}/>
-          <div style={{position:"absolute",inset:0,animation:"borderGlow 4s ease-in-out infinite",pointerEvents:"none",zIndex:3}}/>
+      <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",transform:`translateX(${(0-slide)*100+dragOffset/screenW*100}%)`,transition:isDragging?'none':'transform .5s cubic-bezier(0.16,1,0.3,1)',overflow:"hidden"}}>
+        {/* Food image — fills entire slide, gradient handles the fade */}
+        <div style={{position:"absolute",inset:0,backgroundImage:"url(/food-spread.jpg)",backgroundSize:"cover",backgroundPosition:"center top",opacity:slide===0?1:0,transition:"opacity .5s ease"}}/>
+        {/* Gradient overlay — fades food smoothly into navy */}
+        <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg, rgba(9,9,18,0.0) 0%, rgba(9,9,18,0.0) 25%, rgba(9,9,18,0.2) 40%, rgba(9,9,18,0.55) 52%, rgba(9,9,18,0.8) 60%, #090912 68%)"}}/>
+        <div style={{position:"absolute",inset:0,animation:"borderGlow 4s ease-in-out infinite",pointerEvents:"none",zIndex:3}}/>
 
-          {/* Floating question marks */}
-          {[{x:"12%",s:24,d:0,r:-15},{x:"78%",s:18,d:1.2,r:12},{x:"45%",s:30,d:0.6,r:-8},{x:"25%",s:16,d:1.8,r:20},{x:"65%",s:20,d:2.4,r:-10},{x:"88%",s:16,d:0.4,r:15}].map((q,i)=>(
-            <span key={i} style={{position:"absolute",top:"10%",left:q.x,fontSize:q.s,color:"rgba(255,255,255,0.4)",zIndex:2,animation:`driftUp ${4+i*0.5}s ease-in-out ${q.d}s infinite`,["--rot"]:q.r+"deg",pointerEvents:"none"}}>?</span>
-          ))}
+        {/* Floating question marks — slightly more visible */}
+        {[{x:"12%",s:24,d:0,r:-15},{x:"78%",s:18,d:1.2,r:12},{x:"45%",s:30,d:0.6,r:-8},{x:"25%",s:16,d:1.8,r:20},{x:"65%",s:20,d:2.4,r:-10},{x:"88%",s:16,d:0.4,r:15}].map((q,i)=>(
+          <span key={i} style={{position:"absolute",top:"8%",left:q.x,fontSize:q.s,color:"rgba(255,255,255,0.55)",zIndex:2,animation:`driftUp ${4+i*0.5}s ease-in-out ${q.d}s infinite`,["--rot"]:q.r+"deg",pointerEvents:"none"}}>?</span>
+        ))}
 
           {/* Calorie pill labels — positioned within image area */}
           {[
@@ -326,10 +326,9 @@ function Onboarding({onDone}){
               <div style={{width:1,height:10,background:T.accent,margin:"0 auto",opacity:0.5}}/>
             </div>
           ))}
-        </div>
 
-        {/* Text area — sits below image, above buttons */}
-        <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"flex-start",padding:"12px 22px 0",background:navy}}>
+        {/* Text area — sits over the faded-out bottom portion */}
+        <div style={{position:"absolute",bottom:"12%",left:0,right:0,padding:"0 22px",zIndex:2}}>
           <h1 style={{fontSize:22,fontWeight:800,color:"#fff",lineHeight:1.25,marginBottom:6,opacity:slide===0?1:0,animation:slide===0?"fadeUp .5s ease 1.2s both":"none"}}>Do you actually know<br/>what you just ate?</h1>
           <p style={{fontSize:13,color:T.accent,fontWeight:600,opacity:slide===0?1:0,animation:slide===0?"fadeUp .5s ease 1.4s both":"none"}}>Bitelyze tells you exactly. Every single meal.</p>
         </div>
