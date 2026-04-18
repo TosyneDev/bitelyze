@@ -991,6 +991,11 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut}){
     </div>
   </div>);}
 
+// Route helpers
+const routeMap={"/onboarding":"onboarding","/auth":"auth","/auth/login":"auth-login","/auth/signup":"auth-signup","/setup":"welcome","/dashboard":"app"};
+const screenToRoute={"onboarding":"/onboarding","auth":"/auth","auth-login":"/auth/login","auth-signup":"/auth/signup","welcome":"/setup","s1":"/setup","s2":"/setup","s3":"/setup","s4":"/setup","plan":"/setup","app":"/dashboard"};
+const navigate=(path)=>{if(window.location.pathname!==path)window.history.pushState(null,"",path);};
+
 export default function App(){
   const[authUser,setAuthUser]=useState(undefined);
   const[screen,setScreen]=useState("welcome");
@@ -998,12 +1003,23 @@ export default function App(){
   const goal=calcGoal(profile);
 
   const[onboarded,setOnboarded]=useState(()=>!!localStorage.getItem('bitelyze_onboarded'));
-  const[authInitialMode,setAuthInitialMode]=useState("signup");
+  const[authInitialMode,setAuthInitialMode]=useState(()=>{const p=window.location.pathname;return p==="/auth/login"?"login":"signup";});
+
+  // Sync URL when screen changes
+  useEffect(()=>{const route=screenToRoute[screen];if(route)navigate(route);},[screen]);
+
+  // Handle browser back/forward
+  useEffect(()=>{const handler=()=>{const p=window.location.pathname;const s=routeMap[p];if(s==="app"&&authUser)setScreen("app");else if(s==="welcome"&&authUser)setScreen("welcome");};window.addEventListener("popstate",handler);return()=>window.removeEventListener("popstate",handler);},[authUser]);
 
   useEffect(()=>{const unsub=onAuthStateChanged(auth,async(user)=>{setAuthUser(user||null);if(user){
     const saved=await loadProfile(user.uid);
     if(saved&&saved.height&&saved.weight&&saved.activity&&saved.goal){setProfile(p=>({...p,...saved}));setScreen("app");}
     else{if(saved&&saved.name)setProfile(p=>({...p,...saved}));else if(user.displayName)setProfile(p=>({...p,name:user.displayName}));setScreen("welcome");}
+  }else{
+    // Not logged in — check URL to decide where to go
+    const p=window.location.pathname;
+    if(p==="/auth/login")setAuthInitialMode("login");
+    else if(p==="/auth/signup"||p==="/auth")setAuthInitialMode("signup");
   }});return unsub;},[]);
 
   const saveAndContinue=()=>{
@@ -1011,9 +1027,9 @@ export default function App(){
     setScreen("app");
   };
 
-  if(!onboarded)return(<><style>{GS}</style><Onboarding onDone={(mode)=>{localStorage.setItem('bitelyze_onboarded','1');setAuthInitialMode(mode||"signup");setOnboarded(true);}}/></>);
+  if(!onboarded){navigate("/onboarding");return(<><style>{GS}</style><Onboarding onDone={(mode)=>{localStorage.setItem('bitelyze_onboarded','1');setAuthInitialMode(mode||"signup");setOnboarded(true);}}/></>);}
   if(authUser===undefined)return(<div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><style>{GS}</style><div style={{width:48,height:48,borderRadius:14,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>🍽️</div><div style={{width:32,height:32,border:`3px solid ${T.border}`,borderTop:`3px solid ${T.accent}`,borderRadius:"50%"}} className="spin"/></div>);
-  if(!authUser)return(<><style>{GS}</style><AuthScreen initialMode={authInitialMode}/></>);
+  if(!authUser){navigate(authInitialMode==="login"?"/auth/login":"/auth/signup");return(<><style>{GS}</style><AuthScreen initialMode={authInitialMode}/></>);}
   return(<div style={{fontFamily:"'DM Sans',sans-serif"}}><style>{GS}</style>
     {screen==="welcome"&&<Welcome onNext={()=>setScreen("s1")}/>}
     {screen==="s1"&&<StepBasic p={profile} setP={setProfile} onNext={()=>setScreen("s2")} onBack={()=>setScreen("welcome")}/>}
