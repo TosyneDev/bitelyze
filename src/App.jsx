@@ -998,15 +998,27 @@ const navigate=(path)=>{if(window.location.pathname!==path)window.history.pushSt
 
 export default function App(){
   const[authUser,setAuthUser]=useState(undefined);
-  const[screen,setScreen]=useState("welcome");
+  const[authResolved,setAuthResolved]=useState(false);
+  // Restore screen from localStorage or URL on mount
+  const[screen,setScreen]=useState(()=>{
+    const saved=localStorage.getItem('bitelyze_screen');
+    if(saved&&["welcome","s1","s2","s3","s4","plan","app"].includes(saved))return saved;
+    const p=window.location.pathname;
+    const mapped=routeMap[p];
+    if(mapped==="app")return"app";
+    return"welcome";
+  });
   const[profile,setProfile]=useState({name:"",age:"",gender:"Male",height:"",weight:"",targetWeight:"",activity:"",goal:""});
   const goal=calcGoal(profile);
 
   const[onboarded,setOnboarded]=useState(()=>!!localStorage.getItem('bitelyze_onboarded'));
   const[authInitialMode,setAuthInitialMode]=useState(()=>{const p=window.location.pathname;return p==="/auth/login"?"login":"signup";});
 
-  // Sync URL when screen changes
-  useEffect(()=>{const route=screenToRoute[screen];if(route)navigate(route);},[screen]);
+  // Save screen to localStorage and sync URL when screen changes
+  useEffect(()=>{
+    localStorage.setItem('bitelyze_screen',screen);
+    if(authResolved){const route=screenToRoute[screen];if(route)navigate(route);}
+  },[screen,authResolved]);
 
   // Handle browser back/forward
   useEffect(()=>{const handler=()=>{const p=window.location.pathname;const s=routeMap[p];if(s==="app"&&authUser)setScreen("app");else if(s==="welcome"&&authUser)setScreen("welcome");};window.addEventListener("popstate",handler);return()=>window.removeEventListener("popstate",handler);},[authUser]);
@@ -1016,11 +1028,12 @@ export default function App(){
     if(saved&&saved.height&&saved.weight&&saved.activity&&saved.goal){setProfile(p=>({...p,...saved}));setScreen("app");}
     else{if(saved&&saved.name)setProfile(p=>({...p,...saved}));else if(user.displayName)setProfile(p=>({...p,name:user.displayName}));setScreen("welcome");}
   }else{
-    // Not logged in — check URL to decide where to go
     const p=window.location.pathname;
     if(p==="/auth/login")setAuthInitialMode("login");
     else if(p==="/auth/signup"||p==="/auth")setAuthInitialMode("signup");
-  }});return unsub;},[]);
+    // Clear saved screen on logout
+    localStorage.removeItem('bitelyze_screen');
+  }setAuthResolved(true);});return unsub;},[]);
 
   const saveAndContinue=()=>{
     if(authUser){saveProfile(authUser.uid,profile);}
