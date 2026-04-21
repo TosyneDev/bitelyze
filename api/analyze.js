@@ -141,55 +141,90 @@ export default async function handler(req, res) {
     const profileStr = userProfile ? `a ${userProfile.age}yo ${userProfile.gender} weighing ${userProfile.weight}kg` : "the user";
     const consumed = userProfile?.consumed || 0;
     const dailyGoal = userProfile?.goal || 2000;
-    const jsonFormat = `{"foodName":"...","totalCalories":0,"protein":0,"carbs":0,"fat":0,"fiber":0,"servingSize":"...","healthScore":0,"verdict":"1-2 sentence honest verdict mentioning the food by name, like a knowledgeable friend","suggestions":[{"icon":"relevant emoji","text":"specific tip referencing the food name"}],"smarterSwaps":[{"from":"ingredient in this meal","to":"better alternative","reason":"one line why"}]}
 
-RULES FOR SUGGESTIONS (max 4):
-1. One PORTION tip: if calories>700 say split into two meals, if high say eat X% less, if good say portion is right for their goal
-2. One WHAT TO EAT NEXT tip: based on what macros are low, suggest a specific food for their next meal
-3. One FOOD QUALITY tip specific to this meal's actual ingredients
-4. One POSITIVE note if healthScore>=6 (reinforce good choices), otherwise another improvement tip
-Every suggestion MUST mention the actual food name. No generic advice.
+    const PRECISION_PROMPT = `You are a professional nutritionist and food scientist with expert-level knowledge of global cuisines, including but not limited to:
+- West African cuisine (Nigerian, Ghanaian, Senegalese)
+- American cuisine (fast food, comfort food, southern)
+- European cuisine (Italian, French, Mediterranean, British)
+- Asian cuisine (Chinese, Japanese, Korean, Thai, Indian)
+- Middle Eastern and North African cuisine
+- Latin American cuisine
 
-RULES FOR SMARTER SWAPS (exactly 3):
-Each swap must target a SPECIFIC ingredient in this meal, not generic advice.
-Example for burger with fries: "White bun" -> "Whole wheat bun", reason: "more fiber, slower digestion"
+Your task is to analyze the food with MAXIMUM precision and deliver calorie and nutrition data that a user can trust to make health decisions.
 
-RULES FOR VERDICT:
-Must mention the food name. Be honest but not harsh. Include how it fits the user's day.
-User has eaten ${consumed}kcal of their ${dailyGoal}kcal goal so far today.`;
+━━━ STEP 1: FOOD IDENTIFICATION ━━━
+- Identify EVERY individual food item
+- Do NOT group items unless they are clearly one composite dish
+- Name each item using its most specific common name
+- If you recognize a regional dish, name it specifically
 
-    if (usdaData) {
-      const usdaStr = JSON.stringify(usdaData, null, 2);
-      if (isImage) {
-        // Image + USDA data: send image + USDA reference data
-        enhancedContent = [
-          ...content.filter(c => c.type === "image"),
-          {
-            type: "text",
-            text: `Analyze this food image for ${profileStr}.
+━━━ STEP 2: PORTION ESTIMATION ━━━
+Estimate portion size using visual cues: plate/utensil/hand size, bowl/cup size, thickness, number of pieces, cultural context.
+Express portion in the most natural unit: cups for rice/pasta, grams/oz for meat, slices for pizza/bread, ml/oz for drinks.
 
-Here is REAL nutritional reference data from the USDA database for the identified foods:
-${usdaStr}
+━━━ STEP 3: CALORIE CALCULATION ━━━
+Calculate calories per item individually, sum for total. Account for cooking method precisely (fried +50-100 kcal, grilled lowest, boiled/steamed no addition, sauteed +30-60 kcal). Include visible sauces, dressings, cheese, butter, cream, oil.
 
-IMPORTANT: Use the USDA data above as your primary source for calorie and macro values. Estimate the portion size from the image and scale the USDA values accordingly. The USDA values are per 100g unless a serving size is specified.
+━━━ STEP 4: MACRONUTRIENTS ━━━
+Calculate protein, carbs, fat, fiber in grams. Never return placeholder zeros — estimate based on ingredients.
 
-Return ONLY valid JSON, no markdown: ${jsonFormat}`
-          }
-        ];
-      } else {
-        // Text + USDA data
-        enhancedContent = `Analyze "${foodText}" for ${profileStr}.
+━━━ STEP 5: CONFIDENCE ASSESSMENT ━━━
+Rate HIGH (clear image, identifiable, measurable portions), MEDIUM (partial obstruction, non-ideal lighting, portion assumptions needed), or LOW (blurry, hidden food, heavy overlap, unsure of key ingredient). If not HIGH, explain specifically in confidenceNote.
 
-Here is REAL nutritional reference data from the USDA database:
-${usdaStr}
+━━━ STEP 6: HEALTH SCORE (1-10) ━━━
+Score holistically: whole foods vs processed, protein adequacy, fiber, saturated fat/sugar, veggies/fruits, calorie density.
+1-3 Indulgent, 4-6 Balanced, 7-8 Nutritious, 9-10 Exceptional.
 
-IMPORTANT: Use the USDA data above as your primary source for calorie and macro values. Estimate a standard serving size and scale the USDA values accordingly. The USDA values are per 100g unless a serving size is specified.
+━━━ STEP 7: SUGGESTIONS ━━━
+Exactly 4 suggestions referencing the actual food. Mix required:
+- ONE portion control tip
+- ONE food quality or swap tip
+- ONE suggestion for what to eat NEXT today
+- ONE positive observation if health score 6+
+Each needs a specific relevant emoji. No generic lightbulbs.
 
-Return ONLY valid JSON, no markdown: ${jsonFormat}`;
-      }
+━━━ STEP 8: PORTION TIP ━━━
+One sentence on the specific portion size.
+
+━━━ CRITICAL RULES ━━━
+1. NEVER return calorie ranges. Always commit to a single best estimate.
+2. NEVER say "cannot determine" — always give best estimate with low confidence flag.
+3. Account for invisible ingredients in known dishes (jollof has palm oil/tomato paste, pasta carbonara has cream/cheese/bacon/egg, curry has coconut milk/oil).
+4. Be honest about uncertainty via confidence field.
+5. Prefer slightly HIGH estimates over low for calorie-dense foods (fried, cheese, cream).
+
+━━━ RETURN FORMAT ━━━
+Return ONLY valid JSON. No markdown, no backticks.
+
+{
+  "foodName": "Main dish or meal name",
+  "items": [{"name": "...", "portion": "...", "calories": 0, "protein": 0, "carbs": 0, "fat": 0}],
+  "totalCalories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0,
+  "servingSize": "...", "cookingMethod": "...",
+  "confidence": "high/medium/low",
+  "confidenceNote": "Specific reason if not high, else empty string",
+  "healthScore": 0, "healthScoreLabel": "Indulgent/Balanced/Nutritious/Exceptional",
+  "verdict": "One-sentence honest verdict",
+  "portionTip": "Specific advice on this portion size",
+  "suggestions": [{"icon": "emoji", "text": "tailored suggestion"}],
+  "smarterSwaps": [{"from": "...", "to": "...", "reason": "..."}]
+}
+
+Context: Analyzing for ${profileStr}. User has eaten ${consumed}kcal of their ${dailyGoal}kcal goal so far today.`;
+
+    const usdaAddendum = usdaData ? `
+
+━━━ USDA REFERENCE DATA ━━━
+Here is REAL nutritional reference data from the USDA database for the identified foods. Use this as your primary source for calorie and macro values; scale to the estimated portion size. USDA values are per 100g unless serving size specified.
+${JSON.stringify(usdaData, null, 2)}` : "";
+
+    if (isImage) {
+      enhancedContent = [
+        ...content.filter(c => c.type === "image"),
+        { type: "text", text: PRECISION_PROMPT + usdaAddendum }
+      ];
     } else {
-      // Fallback: no USDA data found, use original content
-      enhancedContent = content;
+      enhancedContent = `The user describes eating: "${foodText}". ` + PRECISION_PROMPT + usdaAddendum;
     }
 
     // Step 4: Send to Claude for final analysis
