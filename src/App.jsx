@@ -162,7 +162,7 @@ const saveStats=async(uid,stats)=>{
   try{await setDoc(doc(db,"users",uid,"data","stats"),stats,{merge:true});}catch(e){}
 };
 const loadStats=async(uid)=>{
-  const def={streak:1,totalMeals:0,waterGoalHits:0,daysUnderGoal:0,earlyBreakfast:0};
+  const def={streak:0,totalMeals:0,waterGoalHits:0,daysUnderGoal:0,earlyBreakfast:0};
   try{const snap=await Promise.race([getDoc(doc(db,"users",uid,"data","stats")),new Promise((_,r)=>setTimeout(()=>r(),5000))]);if(snap.exists()){LS.set(`stats_${uid}`,snap.data());return snap.data();}}catch(e){}
   return LS.get(`stats_${uid}`)||def;
 };
@@ -219,6 +219,7 @@ const loadRecentDays=async(uid,n=14)=>{
 
 // Calculate real streak from day data
 const calcStreak=(daysMap)=>{
+  if(!daysMap)return 0;
   let streak=0;
   const today=new Date();
   for(let i=0;i<365;i++){
@@ -226,15 +227,17 @@ const calcStreak=(daysMap)=>{
     d.setDate(d.getDate()-i);
     const key=d.toISOString().split("T")[0];
     const day=daysMap[key];
-    if(day&&day.meals&&day.meals.length>0){
+    const hasData=day&&((day.meals&&day.meals.length>0)||(day.consumed&&day.consumed>0));
+    if(hasData){
       streak++;
     }else if(i===0){
-      continue; // today might not have meals yet
+      // Today might not have meals yet — don't break the streak, check yesterday
+      continue;
     }else{
       break;
     }
   }
-  return Math.max(streak,1);
+  return streak;
 };
 
 // Build 7-day chart data
@@ -943,7 +946,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
   const[chartTooltipIdx,setChartTooltipIdx]=useState(null);
   const[showMealDetail,setShowMealDetail]=useState(null);// name string
   const[animKey,setAnimKey]=useState(0);
-  const[stats,setStats]=useState({streak:1,totalMeals:0,waterGoalHits:0,daysUnderGoal:0,earlyBreakfast:0});
+  const[stats,setStats]=useState({streak:0,totalMeals:0,waterGoalHits:0,daysUnderGoal:0,earlyBreakfast:0});
   // water = today's water (derived). For backward compat — rest of code reads/writes today's entry.
   const today=todayYMD();
   const water=waterByDate[today]||0;
