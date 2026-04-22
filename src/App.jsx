@@ -1102,7 +1102,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
               <div style={{position:"absolute",top:"-30%",right:"-20%",width:180,height:180,borderRadius:"50%",background:`radial-gradient(circle,${T.accent}08,transparent 70%)`,pointerEvents:"none"}}/>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",position:"relative"}}>
                 <div style={{flex:1,paddingRight:16}}>
-                  <p style={{fontSize:22,fontWeight:900,marginBottom:4,letterSpacing:"-0.02em",lineHeight:1.2}}>{result.foodName}</p>
+                  <p style={{fontSize:22,fontWeight:900,marginBottom:4,letterSpacing:"-0.02em",lineHeight:1.2,wordBreak:"break-word",overflowWrap:"break-word"}}>{result.foodName}</p>
                   <p style={{fontSize:12,color:T.muted,fontWeight:500}}>{result.servingSize}</p>
                   {result._source==="usda+claude"&&<span style={{fontSize:9,background:T.accentDim,border:`1px solid ${T.accent}30`,color:T.accent,borderRadius:6,padding:"2px 7px",fontWeight:700,marginTop:6,display:"inline-block"}}>USDA Verified</span>}
                 </div>
@@ -1201,17 +1201,17 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
               <span style={{flexShrink:0,display:"flex",alignItems:"center"}}><Stethoscope size={20} color={hc}/></span>
               <div>
                 <p style={{fontSize:11,fontWeight:700,color:hc,textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>Meal Verdict</p>
-                <p style={{fontSize:13,color:T.text,lineHeight:1.65,fontWeight:500}}>{verdictText}</p>
+                <p style={{fontSize:14,color:T.text,lineHeight:1.6,fontWeight:500}}>{verdictText}</p>
               </div>
             </div>
           </Card>
 
           {/* Section 5 — Coach Suggestions */}
           {result.suggestions&&result.suggestions.length>0&&(<Card>
-            <CardTitle icon={<Lightbulb size={16} color={T.accent}/>}>Coach Suggestions</CardTitle>
-            {result.suggestions.slice(0,4).map((s,i)=>(<div key={i} style={{display:"flex",gap:10,padding:"10px 0",borderBottom:i<Math.min(result.suggestions.length,4)-1?`1px solid ${T.border}`:"none",animation:`staggerIn .4s ease ${i*0.1}s both`}}>
-              <span style={{fontSize:17,flexShrink:0}}>{s.icon}</span>
-              <span style={{fontSize:13,lineHeight:1.6,color:"#c8c8e0"}}>{s.text}</span>
+            <CardTitle icon={<Lightbulb size={16} color={T.accent}/>}>Bitelyze Tips</CardTitle>
+            {result.suggestions.slice(0,4).map((s,i)=>(<div key={i} style={{display:"flex",gap:11,padding:"12px 0",borderBottom:i<Math.min(result.suggestions.length,4)-1?`1px solid ${T.border}`:"none",animation:`staggerIn .4s ease ${i*0.1}s both`}}>
+              <span style={{fontSize:18,flexShrink:0,lineHeight:1.4}}>{s.icon}</span>
+              <span style={{fontSize:14,lineHeight:1.55,color:T.text}}>{s.text}</span>
             </div>))}
           </Card>)}
 
@@ -1219,12 +1219,12 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
           {result.smarterSwaps&&result.smarterSwaps.length>0&&(<Card>
             <CardTitle icon={<Repeat size={16} color={T.accent}/>}>Smarter Swaps</CardTitle>
             {result.smarterSwaps.map((sw,i)=>(<div key={i} style={{padding:"12px 0",borderBottom:i<result.smarterSwaps.length-1?`1px solid ${T.border}`:"none",animation:`staggerIn .4s ease ${i*0.12}s both`}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                <span style={{fontSize:13,fontWeight:700,color:T.danger,opacity:0.85,textDecoration:"line-through"}}>{sw.from}</span>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+                <span style={{fontSize:14,fontWeight:700,color:T.danger,opacity:0.85,textDecoration:"line-through"}}>{sw.from}</span>
                 <span style={{fontSize:14,color:T.muted}}>→</span>
-                <span style={{fontSize:13,fontWeight:700,color:T.accent}}>{sw.to}</span>
+                <span style={{fontSize:14,fontWeight:700,color:T.accent}}>{sw.to}</span>
               </div>
-              <p style={{fontSize:11,color:T.muted,lineHeight:1.5,paddingLeft:2}}>{sw.reason}</p>
+              <p style={{fontSize:13,color:T.muted,lineHeight:1.55,paddingLeft:2}}>{sw.reason}</p>
             </div>))}
           </Card>)}
 

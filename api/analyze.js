@@ -205,25 +205,26 @@ Rate HIGH (clear image, identifiable, measurable portions), MEDIUM (partial obst
 Score holistically: whole foods vs processed, protein adequacy, fiber, saturated fat/sugar, veggies/fruits, calorie density.
 1-3 Indulgent, 4-6 Balanced, 7-8 Nutritious, 9-10 Exceptional.
 
-━━━ STEP 7: SUGGESTIONS — KEEP SHORT ━━━
+━━━ STEP 7: SUGGESTIONS ━━━
 Exactly 4 suggestions referencing the actual food. Mix required:
 - ONE portion control tip
 - ONE food quality or swap tip
 - ONE suggestion for what to eat NEXT today
 - ONE positive observation if health score 6+
-Each suggestion: MAX 12 WORDS. Punchy, action-oriented, no fluff.
+Each suggestion: 15-22 WORDS. Specific, actionable, references the food.
 Each needs a specific relevant emoji. No generic lightbulbs.
 
-━━━ STEP 8: PORTION TIP — ONE SHORT LINE ━━━
-Max 10 words. Direct advice on the portion.
+━━━ STEP 8: PORTION TIP ━━━
+12-18 words. Direct, specific advice tied to this portion size.
 
-━━━ TEXT LENGTH RULES (STRICT) ━━━
-- verdict: MAX 12 WORDS, one sentence
-- portionTip: MAX 10 WORDS
-- confidenceNote: MAX 10 WORDS
-- suggestions[].text: MAX 12 WORDS each
-- smarterSwaps[].reason: MAX 8 WORDS
-Be concise. Cut filler words. No hedging like "you might want to consider" — say "swap X for Y".
+━━━ TEXT LENGTH RULES ━━━
+- foodName: full descriptive name, no truncation (e.g. "Grilled Chicken Caesar Salad with Croutons")
+- verdict: 15-20 WORDS, one clear sentence
+- portionTip: 12-18 WORDS
+- confidenceNote: 10-15 WORDS, specific reason
+- suggestions[].text: 15-22 WORDS each, specific and actionable
+- smarterSwaps[].reason: 10-15 WORDS, explains the benefit
+Be substantive but not bloated. No hedging like "you might want to consider" — say "swap X for Y to get more protein". Each sentence should add real value.
 
 ━━━ CRITICAL RULES ━━━
 1. NEVER return calorie ranges. Always commit to a single best estimate.
@@ -236,17 +237,17 @@ Be concise. Cut filler words. No hedging like "you might want to consider" — s
 Return ONLY valid JSON. No markdown, no backticks.
 
 {
-  "foodName": "Main dish or meal name (max 6 words)",
+  "foodName": "Full descriptive meal name, no truncation",
   "items": [{"name": "...", "portion": "...", "calories": 0, "protein": 0, "carbs": 0, "fat": 0}],
   "totalCalories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0,
   "servingSize": "...", "cookingMethod": "...",
   "confidence": "high/medium/low",
-  "confidenceNote": "Max 10 words if not high, else empty string",
+  "confidenceNote": "10-15 words if not high, else empty string",
   "healthScore": 0, "healthScoreLabel": "Indulgent/Balanced/Nutritious/Exceptional",
-  "verdict": "Max 12 words, one sentence",
-  "portionTip": "Max 10 words, direct portion advice",
-  "suggestions": [{"icon": "emoji", "text": "Max 12 words, punchy"}],
-  "smarterSwaps": [{"from": "...", "to": "...", "reason": "Max 8 words"}]
+  "verdict": "15-20 words, one clear sentence",
+  "portionTip": "12-18 words, specific portion advice",
+  "suggestions": [{"icon": "emoji", "text": "15-22 words, specific and actionable"}],
+  "smarterSwaps": [{"from": "...", "to": "...", "reason": "10-15 words, explains benefit"}]
 }
 
 Context: Analyzing for ${profileStr}. User has eaten ${consumed}kcal of their ${dailyGoal}kcal goal so far today.`;
