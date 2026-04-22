@@ -20,7 +20,7 @@ const firebaseConfig = {
 };
 const firebaseApp    = initializeApp(firebaseConfig);
 const auth           = getAuth(firebaseApp);
-const db             = initializeFirestore(firebaseApp, { experimentalForceLongPolling: true });
+const db             = initializeFirestore(firebaseApp, { experimentalAutoDetectLongPolling: true });
 const googleProvider = new GoogleAuthProvider();
 
 const THEMES={
@@ -1665,24 +1665,40 @@ export default function App(){
 
   useEffect(()=>{const unsub=onAuthStateChanged(auth,async(user)=>{setAuthUser(user||null);if(user){
     setProfileLoading(true);
-    // Check if this is a returning user (creation time differs from last sign-in)
+    // Multiple ways to identify a returning user
     const metadata=user.metadata||{};
-    const isReturningUser=metadata.creationTime&&metadata.lastSignInTime&&metadata.creationTime!==metadata.lastSignInTime;
+    const creationTime=metadata.creationTime?new Date(metadata.creationTime).getTime():0;
+    const lastSignInTime=metadata.lastSignInTime?new Date(metadata.lastSignInTime).getTime():0;
+    // More than 30 seconds between creation and last sign-in means returning user
+    const isReturningByMetadata=creationTime>0&&lastSignInTime>0&&(lastSignInTime-creationTime>30000);
+    // Also check the global setup-complete flag (cross-browser via user's Firebase claims-like approach)
+    const setupCompleteKey=`setup_complete_${user.uid}`;
+    const isSetupCompleteLocal=localStorage.getItem(setupCompleteKey)==="1";
+
+    console.log("[auth] User signed in:",{uid:user.uid,email:user.email,isReturningByMetadata,isSetupCompleteLocal,creationTime:metadata.creationTime,lastSignInTime:metadata.lastSignInTime});
+
     const saved=await loadProfile(user.uid);
-    if(saved&&saved.height&&saved.weight&&saved.activity&&saved.goal){
-      // Full profile — go to dashboard
-      setProfile(p=>({...p,...saved}));setScreen("app");
-    } else if(isReturningUser){
-      // Returning user but profile incomplete/failed to load — still send to dashboard
-      // They can edit profile from Me tab if needed. Never dump returning users into setup.
-      if(saved)setProfile(p=>({...p,...saved}));else if(user.displayName)setProfile(p=>({...p,name:user.displayName}));
+    console.log("[auth] Loaded profile:",saved);
+
+    const hasFullProfile=saved&&saved.height&&saved.weight&&saved.activity&&saved.goal;
+    const isReturningUser=isReturningByMetadata||isSetupCompleteLocal||!!saved;
+
+    if(hasFullProfile){
+      setProfile(p=>({...p,...saved}));
+      try{localStorage.setItem(setupCompleteKey,"1");}catch(e){}
       setScreen("app");
-      console.log("[auth] Returning user with incomplete profile — going to dashboard");
-    } else {
-      // Brand new account — send to setup
-      if(saved&&saved.name)setProfile(p=>({...p,...saved}));
+      console.log("[auth] → dashboard (full profile)");
+    } else if(isReturningUser){
+      // Returning user but profile load incomplete or partial. Send to dashboard anyway.
+      if(saved)setProfile(p=>({...p,...saved}));
       else if(user.displayName)setProfile(p=>({...p,name:user.displayName}));
+      setScreen("app");
+      console.log("[auth] → dashboard (returning user, incomplete load)");
+    } else {
+      // Genuinely new account — send to setup
+      if(user.displayName)setProfile(p=>({...p,name:user.displayName}));
       setScreen("welcome");
+      console.log("[auth] → setup flow (new account)");
     }
     setProfileLoading(false);
   }else{
@@ -1694,7 +1710,10 @@ export default function App(){
   }setAuthResolved(true);});return unsub;},[]);
 
   const saveAndContinue=async()=>{
-    if(authUser){await saveProfile(authUser.uid,profile);}
+    if(authUser){
+      await saveProfile(authUser.uid,profile);
+      try{localStorage.setItem(`setup_complete_${authUser.uid}`,"1");}catch(e){}
+    }
     setScreen("app");
   };
 
