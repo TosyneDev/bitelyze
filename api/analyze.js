@@ -1,6 +1,7 @@
 // Simple in-memory rate limiting (resets on cold start, but adds server-side protection)
 const rateLimits = {};
 const DAILY_LIMIT = 5;
+const DEV_EMAILS = ["ogunlowooluwatosin28@gmail.com"];
 
 function getRateLimitKey(req) {
   const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || "unknown";
@@ -8,7 +9,12 @@ function getRateLimitKey(req) {
   return `${ip}_${today}`;
 }
 
-function checkRateLimit(req) {
+function isDevEmail(email) {
+  return email && DEV_EMAILS.includes(String(email).toLowerCase());
+}
+
+function checkRateLimit(req, email) {
+  if (isDevEmail(email)) return true;
   const key = getRateLimitKey(req);
   const count = rateLimits[key] || 0;
   if (count >= DAILY_LIMIT) return false;
@@ -100,7 +106,8 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "API key not configured" });
   }
 
-  if (!checkRateLimit(req)) {
+  const userEmail = req.body?.userEmail || req.headers["x-user-email"] || null;
+  if (!checkRateLimit(req, userEmail)) {
     return res.status(429).json({ error: { message: "Daily limit reached. You get 5 free analyses per day. Try again tomorrow!" } });
   }
 

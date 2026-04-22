@@ -85,14 +85,17 @@ const buildCalendarGrid=(monthDate,history)=>{
   }
   return grid;
 };
-// ── Rate Limiting (3 analyses per day) ──
+// ── Rate Limiting (5 analyses per day) ──
+// Developer accounts bypass all limits for testing
+const DEV_EMAILS=["ogunlowooluwatosin28@gmail.com"];
+const isDevUser=()=>{try{const u=auth.currentUser;return u&&DEV_EMAILS.includes((u.email||"").toLowerCase());}catch(e){return false;}};
 const DAILY_LIMIT=5;
 const getDeviceFingerprint=()=>{try{const c=document.createElement("canvas");const ctx=c.getContext("2d");ctx.textBaseline="top";ctx.font="14px Arial";ctx.fillText("fp",2,2);const d=c.toDataURL().slice(-50);const s=`${screen.width}x${screen.height}x${screen.colorDepth}x${navigator.hardwareConcurrency||0}x${Intl.DateTimeFormat().resolvedOptions().timeZone}x${d}`;let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return"dev_"+Math.abs(h).toString(36);}catch(e){return"dev_fallback";}};
 const getRateLimitKey=(uid)=>{const today=new Date().toISOString().split("T")[0];return`rate_${uid}_${today}`;};
 const getDeviceRateLimitKey=()=>{const today=new Date().toISOString().split("T")[0];return`rate_${getDeviceFingerprint()}_${today}`;};
 const getUsageCount=(uid)=>{const userCount=parseInt(localStorage.getItem(getRateLimitKey(uid))||"0",10);const deviceCount=parseInt(localStorage.getItem(getDeviceRateLimitKey())||"0",10);return Math.max(userCount,deviceCount);};
-const incrementUsage=(uid)=>{const userKey=getRateLimitKey(uid);const deviceKey=getDeviceRateLimitKey();const userCount=parseInt(localStorage.getItem(userKey)||"0",10)+1;const deviceCount=parseInt(localStorage.getItem(deviceKey)||"0",10)+1;const newCount=Math.max(userCount,deviceCount);localStorage.setItem(userKey,String(newCount));localStorage.setItem(deviceKey,String(newCount));return newCount;};
-const getRemainingAnalyses=(uid)=>Math.max(0,DAILY_LIMIT-getUsageCount(uid));
+const incrementUsage=(uid)=>{if(isDevUser())return 0;const userKey=getRateLimitKey(uid);const deviceKey=getDeviceRateLimitKey();const userCount=parseInt(localStorage.getItem(userKey)||"0",10)+1;const deviceCount=parseInt(localStorage.getItem(deviceKey)||"0",10)+1;const newCount=Math.max(userCount,deviceCount);localStorage.setItem(userKey,String(newCount));localStorage.setItem(deviceKey,String(newCount));return newCount;};
+const getRemainingAnalyses=(uid)=>{if(isDevUser())return 999;return Math.max(0,DAILY_LIMIT-getUsageCount(uid));};
 
 const HOUR=new Date().getHours();
 const coachGreeting=(name)=>{if(HOUR<12)return`Good morning, ${name}! 🌅 Breakfast sets the tone.`;if(HOUR<17)return`Hey ${name}! 🌤️ Midday check-in — how's your eating going?`;return`Evening, ${name}! 🌙 Almost done for the day.`;};
@@ -869,7 +872,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
     if(!imgB64&&textFood&&isVagueInput(textFood)&&!clarifiedFoods.has(textFood.toLowerCase())){setClarifyFood(textFood);setSelectedPortion(null);setCustomPortion('');setShowClarifier(true);return;}
     setLoading(true);setError(null);setParseError(false);setPortionFlow("initial");setPortionConfirmed(false);setShowConfirmMsg(false);setCustomPct(25);try{
     const content=imgB64?[{type:"image",source:{type:"base64",media_type:"image/jpeg",data:imgB64}},{type:"text",text:`Analyze this food image. Return ONLY valid JSON no markdown.`}]:`Analyze "${textFood}". Return ONLY valid JSON.`;
-    const body={content,foodText:textFood||null,userProfile:{age:profile.age,gender:profile.gender,weight:profile.weight,consumed,goal}};
+    const body={content,foodText:textFood||null,userEmail:auth.currentUser?.email||null,userProfile:{age:profile.age,gender:profile.gender,weight:profile.weight,consumed,goal}};
     const res=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});if(!res.ok){let msg="Server error ("+res.status+")";try{const err=await res.json();msg=err.error?.message||err.error||msg;}catch(e){}throw new Error(msg);}const data=await res.json();if(data.error)throw new Error(data.error.message||JSON.stringify(data.error));const txt=data.content.map(i=>i.text||"").join("");
     let parsed;try{parsed=JSON.parse(txt.replace(/```json|```/g,"").trim());}catch(parseErr){setParseError(true);setLoading(false);incrementUsage(uid);setRemaining(getRemainingAnalyses(uid));return;}
     parsed._source=data._source||"claude";parsed.totalCalories=Math.round(Number(parsed.totalCalories)||Number(parsed.calories)||0);parsed.protein=Math.round((Number(parsed.protein)||0)*10)/10;parsed.carbs=Math.round((Number(parsed.carbs)||0)*10)/10;parsed.fat=Math.round((Number(parsed.fat)||0)*10)/10;parsed.fiber=Math.round((Number(parsed.fiber)||0)*10)/10;parsed.healthScore=Math.round(Number(parsed.healthScore)||Number(parsed.health_score)||5);parsed.foodName=parsed.foodName||parsed.food_name||parsed.name||"Unknown food";
