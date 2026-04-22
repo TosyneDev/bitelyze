@@ -965,6 +965,13 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
   const consumed=useMemo(()=>mealLog.reduce((s,m)=>s+(Number(m.totalCalories)||0),0),[mealLog]);
   const[saving,setSaving]=useState(false);
   const[recentDays,setRecentDays]=useState({});
+  const recentDaysRef=useRef({});
+  useEffect(()=>{
+    recentDaysRef.current=recentDays;
+    // Recompute streak whenever recentDays changes (e.g. Firestore load completes)
+    const realStreak=calcStreak(recentDays);
+    setStats(s=>s.streak!==realStreak?{...s,streak:realStreak}:s);
+  },[recentDays]);
   const[toast,setToast]=useState(null);
   const[tipCardIdx,setTipCardIdx]=useState(0);
   const[placeholderIdx,setPlaceholderIdx]=useState(0);
@@ -1100,8 +1107,15 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
     })();
   },[uid]);
 
-  useEffect(()=>{if(!uid)return;const t=setTimeout(async()=>{setSaving(true);await saveTodayData(uid,{consumed,meals:mealLog,water});// Recalculate streak with today's updated data
-    const todayKey=new Date().toISOString().split("T")[0];const updatedDays={...recentDays,[todayKey]:{consumed,meals:mealLog,water}};setRecentDays(updatedDays);const realStreak=calcStreak(updatedDays);const newStats={...stats,streak:realStreak,totalMeals:allHistory.length,waterGoalHits:water>=8?Math.max(stats.waterGoalHits,1):stats.waterGoalHits,daysUnderGoal:consumed>0&&consumed<=goal?Math.max(stats.daysUnderGoal,1):stats.daysUnderGoal,earlyBreakfast:mealLog.some(m=>parseInt(m.time)<9)?Math.max(stats.earlyBreakfast,1):stats.earlyBreakfast};await saveStats(uid,newStats);setStats(newStats);setSaving(false);},1500);return()=>clearTimeout(t);},[consumed,mealLog,water]);
+  useEffect(()=>{if(!uid)return;const t=setTimeout(async()=>{setSaving(true);await saveTodayData(uid,{consumed,meals:mealLog,water});
+    // Use ref to get latest recentDays (state might be stale in setTimeout closure)
+    const todayKey=new Date().toISOString().split("T")[0];
+    const updatedDays={...recentDaysRef.current,[todayKey]:{consumed,meals:mealLog,water}};
+    setRecentDays(updatedDays);
+    const realStreak=calcStreak(updatedDays);
+    const newStats={...stats,streak:realStreak,totalMeals:allHistory.length,waterGoalHits:water>=8?Math.max(stats.waterGoalHits,1):stats.waterGoalHits,daysUnderGoal:consumed>0&&consumed<=goal?Math.max(stats.daysUnderGoal,1):stats.daysUnderGoal,earlyBreakfast:mealLog.some(m=>parseInt(m.time)<9)?Math.max(stats.earlyBreakfast,1):stats.earlyBreakfast};
+    await saveStats(uid,newStats);setStats(newStats);setSaving(false);
+  },1500);return()=>clearTimeout(t);},[consumed,mealLog,water]);
 
   // Build real 7-day chart — inject today's live consumed value
   const weekData=(()=>{const wd=buildWeekData(recentDays);const todayKey=new Date().toISOString().split("T")[0];return wd.map(d=>d.isToday?{...d,cal:consumed}:d);})();
