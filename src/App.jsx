@@ -533,7 +533,48 @@ function Onboarding({onDone}){
   </div>);
 }
 
-function Welcome({onNext}){return(<div className="fadeIn" style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",padding:"40px 22px",textAlign:"center",background:T.bg,backgroundImage:`radial-gradient(ellipse at 50% 28%, #00e5a012 0%, transparent 62%)`}}><div className="pop" style={{width:92,height:92,borderRadius:26,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:46,marginBottom:26,boxShadow:`0 0 52px ${T.accentGlow}`,color:"#000"}}><UtensilsCrossed size={46}/></div><h1 style={{fontSize:34,fontWeight:900,letterSpacing:"-1px",marginBottom:10,lineHeight:1.15,color:T.text}}>Meet <span style={{color:T.accent}}>Bitelyze</span></h1><p style={{color:T.muted,fontSize:14,lineHeight:1.75,maxWidth:290,marginBottom:36}}>Your personal nutrition coach. Snap meals, track calories, build healthy habits — one bite at a time.</p><div style={{width:"100%",maxWidth:330}}>{[[<Camera size={19} color={T.accent}/>,"Snap food → instant calorie breakdown"],[<Brain size={19} color={T.accent}/>,"Smart coaching tips personalised to you"],[<Trophy size={19} color={T.accent}/>,"Streaks, badges & weekly progress"],[<Droplets size={19} color={T.accent}/>,"Hydration tracking & meal reminders"]].map(([icon,text])=>(<div key={text} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 15px",background:T.inputBg,border:`1px solid ${T.border}`,borderRadius:12,marginBottom:9,textAlign:"left"}}><span style={{fontSize:19,display:"inline-flex",alignItems:"center"}}>{icon}</span><span style={{fontSize:13,color:T.muted,fontWeight:500}}>{text}</span></div>))}<Btn onClick={onNext} style={{marginTop:14,fontSize:16,padding:"15px"}}><span style={{display:"inline-flex",alignItems:"center",gap:6}}>Let's Go <ArrowRight size={14}/></span></Btn></div></div>);}
+function Welcome({onNext,onExistingProfileFound,uid}){
+  const[checking,setChecking]=useState(false);
+  const[checkResult,setCheckResult]=useState(null);
+  const checkCloud=async()=>{
+    if(!uid)return;
+    setChecking(true);setCheckResult(null);
+    try{
+      const snap=await Promise.race([getDoc(doc(db,"users",uid,"data","profile")),new Promise((_,r)=>setTimeout(()=>r(new Error("timeout")),20000))]);
+      if(snap&&snap.exists()){
+        const data=snap.data();
+        try{localStorage.setItem("profile_"+uid,JSON.stringify(data));localStorage.setItem(`setup_complete_${uid}`,"1");}catch(e){}
+        setCheckResult({ok:true,data});
+        setTimeout(()=>{if(onExistingProfileFound)onExistingProfileFound(data);},800);
+      }else{
+        setCheckResult({ok:false,msg:"No saved profile found for this account"});
+      }
+    }catch(e){
+      setCheckResult({ok:false,msg:"Couldn't reach cloud. Try again or continue setup."});
+    }
+    setChecking(false);
+  };
+  return(<div className="fadeIn" style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",padding:"40px 22px",textAlign:"center",background:T.bg,backgroundImage:`radial-gradient(ellipse at 50% 28%, #00e5a012 0%, transparent 62%)`}}>
+    <div className="pop" style={{width:92,height:92,borderRadius:26,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:46,marginBottom:26,boxShadow:`0 0 52px ${T.accentGlow}`,color:"#000"}}><UtensilsCrossed size={46}/></div>
+    <h1 style={{fontSize:34,fontWeight:900,letterSpacing:"-1px",marginBottom:10,lineHeight:1.15,color:T.text}}>Meet <span style={{color:T.accent}}>Bitelyze</span></h1>
+    <p style={{color:T.muted,fontSize:14,lineHeight:1.75,maxWidth:290,marginBottom:24}}>Your personal nutrition coach. Snap meals, track calories, build healthy habits — one bite at a time.</p>
+
+    {/* Existing user banner */}
+    <div style={{width:"100%",maxWidth:330,marginBottom:16,padding:"12px 14px",background:`${T.accent}0a`,border:`1px solid ${T.accent}30`,borderRadius:12}}>
+      <p style={{fontSize:12,color:T.text,marginBottom:8,lineHeight:1.5}}>Already used Bitelyze before? Pull your profile from the cloud.</p>
+      <button onClick={checkCloud} disabled={checking} style={{width:"100%",padding:"9px",borderRadius:10,border:`1px solid ${T.accent}50`,background:T.accentDim,color:T.accent,fontSize:12,fontWeight:700,cursor:checking?"wait":"pointer",fontFamily:"inherit",opacity:checking?0.6:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+        {checking?<><div style={{width:12,height:12,border:`2px solid ${T.accent}40`,borderTop:`2px solid ${T.accent}`,borderRadius:"50%"}} className="spin"/> Checking cloud...</>:<><Download size={13}/> Check for existing profile</>}
+      </button>
+      {checkResult&&!checkResult.ok&&<p style={{fontSize:11,color:T.muted,marginTop:8,lineHeight:1.4}}>{checkResult.msg}</p>}
+      {checkResult&&checkResult.ok&&<p style={{fontSize:11,color:T.accent,marginTop:8,lineHeight:1.4,fontWeight:600}}>✓ Profile found! Loading dashboard...</p>}
+    </div>
+
+    <div style={{width:"100%",maxWidth:330}}>
+      {[[<Camera size={19} color={T.accent}/>,"Snap food → instant calorie breakdown"],[<Brain size={19} color={T.accent}/>,"Smart coaching tips personalised to you"],[<Trophy size={19} color={T.accent}/>,"Streaks, badges & weekly progress"],[<Droplets size={19} color={T.accent}/>,"Hydration tracking & meal reminders"]].map(([icon,text])=>(<div key={text} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 15px",background:T.inputBg,border:`1px solid ${T.border}`,borderRadius:12,marginBottom:9,textAlign:"left"}}><span style={{fontSize:19,display:"inline-flex",alignItems:"center"}}>{icon}</span><span style={{fontSize:13,color:T.muted,fontWeight:500}}>{text}</span></div>))}
+      <Btn onClick={onNext} style={{marginTop:14,fontSize:16,padding:"15px"}}><span style={{display:"inline-flex",alignItems:"center",gap:6}}>Let's Go <ArrowRight size={14}/></span></Btn>
+    </div>
+  </div>);
+}
 
 function StepBasic({p,setP,onNext,onBack}){const ok=p.name.trim()&&p.age&&parseInt(p.age)>0&&p.gender;return(<div className="slideIn" style={{minHeight:"100vh",background:T.bg}}><div style={{padding:"20px 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`}}><button onClick={onBack} style={{background:"none",border:"none",color:T.muted,fontSize:22,cursor:"pointer",marginBottom:14,display:"inline-flex",alignItems:"center"}}><ArrowLeft size={20}/></button><ProgressDots total={4} current={0}/><h2 style={{fontSize:22,fontWeight:800,marginBottom:4,color:T.text}}>Let's get to know you</h2><p style={{color:T.muted,fontSize:13}}>Step 1 of 4 — Basic information</p></div><div style={{padding:"24px 22px 40px",maxWidth:480,margin:"0 auto"}}><TextInput label="Your Name" value={p.name} onChange={v=>setP(x=>({...x,name:v}))} placeholder="Enter your name"/><NumInput label="Age" value={p.age} onChange={v=>setP(x=>({...x,age:v}))} unit="yrs" placeholder="Enter your age"/><p style={{fontSize:11,color:T.muted,marginBottom:8,textTransform:"uppercase",letterSpacing:".7px",fontWeight:700}}>Gender</p><div style={{display:"flex",gap:10,marginBottom:26}}>{[["Male",<User size={20}/>],["Female",<User size={20}/>]].map(([g,icon])=>(<button key={g} onClick={()=>setP(x=>({...x,gender:g}))} style={{flex:1,padding:"13px",borderRadius:12,border:`1.5px solid ${p.gender===g?T.accent:T.border}`,background:p.gender===g?T.accentDim:T.inputBg,color:p.gender===g?T.accent:T.text,fontWeight:700,fontSize:14,cursor:"pointer",transition:"all .18s",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span style={{fontSize:20,display:"inline-flex",alignItems:"center"}}>{icon}</span>{g}</button>))}</div><Btn onClick={onNext} disabled={!ok}><span style={{display:"inline-flex",alignItems:"center",gap:6}}>Continue <ArrowRight size={14}/></span></Btn></div></div>);}
 
@@ -1721,7 +1762,7 @@ export default function App(){
   if(authUser===undefined||(authUser&&profileLoading))return(<div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><style>{GS}</style><div style={{width:48,height:48,borderRadius:14,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:"#000"}}><UtensilsCrossed size={24}/></div><div style={{width:32,height:32,border:`3px solid ${T.border}`,borderTop:`3px solid ${T.accent}`,borderRadius:"50%"}} className="spin"/><p style={{fontSize:12,color:T.muted,fontWeight:500}}>{profileLoading?"Loading your profile...":""}</p></div>);
   if(!authUser){navigate(authInitialMode==="login"?"/auth/login":"/auth/signup");return(<><style>{GS}</style><AuthScreen initialMode={authInitialMode}/></>);}
   return(<div style={{fontFamily:"'DM Sans',sans-serif"}}><style>{GS}</style>
-    {screen==="welcome"&&<Welcome onNext={()=>setScreen("s1")}/>}
+    {screen==="welcome"&&<Welcome onNext={()=>setScreen("s1")} uid={authUser?.uid} onExistingProfileFound={(data)=>{setProfile(p=>({...p,...data}));setScreen("app");}}/>}
     {screen==="s1"&&<StepBasic p={profile} setP={setProfile} onNext={()=>setScreen("s2")} onBack={()=>setScreen("welcome")}/>}
     {screen==="s2"&&<StepBody p={profile} setP={setProfile} onNext={()=>setScreen("s3")} onBack={()=>setScreen("s1")}/>}
     {screen==="s3"&&<StepActivity p={profile} setP={setProfile} onNext={()=>setScreen("s4")} onBack={()=>setScreen("s2")}/>}
