@@ -142,14 +142,29 @@ const loadHistory=async(uid)=>{
   return LS.get(`history_${uid}`)||[];
 };
 
-const loadRecentDays=async(uid,n=14)=>{
+const loadRecentDaysLocal=(uid,n=14)=>{
   const days={};const today=new Date();
   for(let i=0;i<n;i++){
     const d=new Date(today);d.setDate(d.getDate()-i);
     const key=d.toISOString().split("T")[0];
-    try{const snap=await Promise.race([getDoc(doc(db,"users",uid,"days",key)),new Promise((_,r)=>setTimeout(()=>r(),3000))]);if(snap.exists()){days[key]=snap.data();LS.set(`day_${uid}_${key}`,snap.data());}}
-    catch(e){const local=LS.get(`day_${uid}_${key}`);if(local)days[key]=local;}
+    const local=LS.get(`day_${uid}_${key}`);
+    if(local)days[key]=local;
   }
+  return days;
+};
+const loadRecentDays=async(uid,n=14)=>{
+  // Fire all reads in parallel with a single 4s timeout for the whole batch
+  const keys=[];const today=new Date();
+  for(let i=0;i<n;i++){const d=new Date(today);d.setDate(d.getDate()-i);keys.push(d.toISOString().split("T")[0]);}
+  const results=await Promise.all(keys.map(async key=>{
+    try{
+      const snap=await Promise.race([getDoc(doc(db,"users",uid,"days",key)),new Promise((_,r)=>setTimeout(()=>r(),4000))]);
+      if(snap&&snap.exists()){const data=snap.data();LS.set(`day_${uid}_${key}`,data);return[key,data];}
+    }catch(e){}
+    const local=LS.get(`day_${uid}_${key}`);
+    return local?[key,local]:null;
+  }));
+  const days={};results.forEach(r=>{if(r)days[r[0]]=r[1];});
   return days;
 };
 
@@ -648,28 +663,51 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
     return()=>clearTimeout(t);
   },[toast]);
 
-  useEffect(()=>{if(!uid)return;(async()=>{const[todayData,history,savedStats,days]=await Promise.all([loadTodayData(uid),loadHistory(uid),loadStats(uid),loadRecentDays(uid,14)]);
-    // Seed waterByDate: start with today's water, then pull from loaded day data
-    const waterMap={};
-    if(todayData){waterMap[todayYMD()]=todayData.water||0;}
-    if(days){Object.entries(days).forEach(([k,v])=>{if(v&&typeof v.water==="number")waterMap[k]=v.water;});}
-    setWaterByDate(waterMap);
-    // Migrate history entries missing `date`
-    let migrationHappened=false;
+  useEffect(()=>{if(!uid)return;
+    // Phase 1 — INSTANT load from localStorage (sync, no network wait)
     const fallbackDate=todayYMD();
-    const migrated=(history||[]).map(m=>{
+    const localHistory=LS.get(`history_${uid}`)||[];
+    const localTodayData=LS.get(`day_${uid}_${fallbackDate}`);
+    const localStats=LS.get(`stats_${uid}`);
+    const localDays=loadRecentDaysLocal(uid,14);
+    const waterMap={};
+    if(localTodayData)waterMap[fallbackDate]=localTodayData.water||0;
+    Object.entries(localDays).forEach(([k,v])=>{if(v&&typeof v.water==="number")waterMap[k]=v.water;});
+    setWaterByDate(waterMap);
+    let migrationHappened=false;
+    const migratedLocal=localHistory.map(m=>{
       if(!m.date){migrationHappened=true;return{...m,date:m.timestamp?ymd(new Date(m.timestamp)):fallbackDate};}
       return m;
     });
-    setAllHistory(migrated);
-    if(migrationHappened&&!localStorage.getItem('bitelyze_migration_v1')){
-      setToast("Some older meals had missing dates and were assumed to be today");
-      try{localStorage.setItem('bitelyze_migration_v1','1');}catch(e){}
-    }
-    setRecentDays(days);
-    const realStreak=calcStreak(days);
-    if(savedStats){setStats({...savedStats,streak:realStreak});}else{setStats(s=>({...s,streak:realStreak}));}
-  })();},[uid]);
+    setAllHistory(migratedLocal);
+    setRecentDays(localDays);
+    if(localStats)setStats({...localStats,streak:calcStreak(localDays)});
+    else setStats(s=>({...s,streak:calcStreak(localDays)}));
+
+    // Phase 2 — BACKGROUND refresh from Firestore (won't block UI)
+    (async()=>{
+      try{
+        const[todayData,history,savedStats,days]=await Promise.all([loadTodayData(uid),loadHistory(uid),loadStats(uid),loadRecentDays(uid,14)]);
+        const wm={};
+        if(todayData)wm[fallbackDate]=todayData.water||0;
+        if(days)Object.entries(days).forEach(([k,v])=>{if(v&&typeof v.water==="number")wm[k]=v.water;});
+        setWaterByDate(wm);
+        const migrated=(history||[]).map(m=>{
+          if(!m.date){migrationHappened=true;return{...m,date:m.timestamp?ymd(new Date(m.timestamp)):fallbackDate};}
+          return m;
+        });
+        setAllHistory(migrated);
+        if(migrationHappened&&!localStorage.getItem('bitelyze_migration_v1')){
+          setToast("Some older meals had missing dates and were assumed to be today");
+          try{localStorage.setItem('bitelyze_migration_v1','1');}catch(e){}
+        }
+        setRecentDays(days);
+        const realStreak=calcStreak(days);
+        if(savedStats)setStats({...savedStats,streak:realStreak});
+        else setStats(s=>({...s,streak:realStreak}));
+      }catch(e){}
+    })();
+  },[uid]);
 
   useEffect(()=>{if(!uid)return;const t=setTimeout(async()=>{setSaving(true);await saveTodayData(uid,{consumed,meals:mealLog,water});// Recalculate streak with today's updated data
     const todayKey=new Date().toISOString().split("T")[0];const updatedDays={...recentDays,[todayKey]:{consumed,meals:mealLog,water}};setRecentDays(updatedDays);const realStreak=calcStreak(updatedDays);const newStats={...stats,streak:realStreak,totalMeals:allHistory.length,waterGoalHits:water>=8?Math.max(stats.waterGoalHits,1):stats.waterGoalHits,daysUnderGoal:consumed>0&&consumed<=goal?Math.max(stats.daysUnderGoal,1):stats.daysUnderGoal,earlyBreakfast:mealLog.some(m=>parseInt(m.time)<9)?Math.max(stats.earlyBreakfast,1):stats.earlyBreakfast};await saveStats(uid,newStats);setStats(newStats);setSaving(false);},1500);return()=>clearTimeout(t);},[consumed,mealLog,water]);
