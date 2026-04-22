@@ -914,6 +914,17 @@ function DashboardTour({name,onDone}){
 function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}){
   const[tab,setTab]=useState("analyze");
   const[showTour,setShowTour]=useState(()=>{try{return!localStorage.getItem(`bitelyze_tour_v1_${uid}`);}catch(e){return false;}});
+  const[condensedStepIdx,setCondensedStepIdx]=useState(null);// null=closed, 0..N=current question, "done"=success
+  const[reminderDismissed,setReminderDismissed]=useState(()=>{
+    try{
+      const raw=localStorage.getItem(`bitelyze_skip_reminder_${uid}`);
+      if(!raw)return false;
+      const d=JSON.parse(raw);
+      if(d.count>=3)return true;
+      if(d.lastDismissed&&(Date.now()-d.lastDismissed)<7*24*60*60*1000)return true;
+      return false;
+    }catch(e){return false;}
+  });
   const[image,setImage]=useState(null);
   const[imgB64,setImgB64]=useState(null);
   const[loading,setLoading]=useState(false);
@@ -1339,6 +1350,33 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
   return(<div style={{minHeight:"100vh",background:T.bg,fontFamily:"'DM Sans',sans-serif",color:T.text,transition:"background .3s ease, color .3s ease"}}>
     {/* ── Product Tour (shown only once) ── */}
     {showTour&&<DashboardTour name={profile.name} onDone={()=>{try{localStorage.setItem(`bitelyze_tour_v1_${uid}`,"1");}catch(e){}setShowTour(false);}}/>}
+
+    {/* ── Condensed Profile Completion Flow ── */}
+    {condensedStepIdx!==null&&(()=>{
+      const skipped=["blockers","habits","planningHabit","motivation"].filter(k=>profile[k]===null);
+      if(skipped.length===0||condensedStepIdx==="done")return(
+        <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",display:"flex",alignItems:"center",justifyContent:"center",padding:"22px"}}>
+          <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:22,padding:"32px 26px",maxWidth:360,width:"100%",textAlign:"center",animation:"pop .4s ease"}}>
+            <div style={{fontSize:48,marginBottom:14}}>🎉</div>
+            <h2 style={{fontSize:22,fontWeight:900,color:T.text,marginBottom:10}}>Profile complete!</h2>
+            <p style={{fontSize:14,color:T.muted,lineHeight:1.6,marginBottom:22}}>Your coach just got smarter.</p>
+            <button onClick={()=>setCondensedStepIdx(null)} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:T.accent,color:"#000",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6}}>Done <ArrowRight size={14}/></button>
+          </div>
+        </div>);
+      const key=skipped[condensedStepIdx];
+      const onNext=()=>{
+        const newSkipped=["blockers","habits","planningHabit","motivation"].filter(k=>k!==key&&profile[k]===null);
+        if(newSkipped.length===0||condensedStepIdx>=skipped.length-1){setCondensedStepIdx("done");if(uid)saveProfile(uid,profile);}
+        else setCondensedStepIdx(i=>i+1);
+      };
+      const common={p:profile,setP:setProfile,onNext,onBack:()=>{if(condensedStepIdx>0)setCondensedStepIdx(i=>i-1);else setCondensedStepIdx(null);}};
+      return(<div style={{position:"fixed",inset:0,zIndex:150,background:T.bg,overflowY:"auto"}}>
+        {key==="blockers"&&<StepBlockers {...common}/>}
+        {key==="habits"&&<StepHabits {...common}/>}
+        {key==="planningHabit"&&<StepMealPlanning {...common}/>}
+        {key==="motivation"&&<StepMotivation {...common}/>}
+      </div>);
+    })()}
 
     {/* ── Toast Notification ── */}
     {toast&&(<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:`linear-gradient(135deg,${T.accent},#00b87a)`,color:"#000",padding:"12px 24px",borderRadius:16,fontSize:14,fontWeight:700,zIndex:9999,animation:"slideUp .3s ease forwards",boxShadow:`0 8px 32px ${T.accentGlow}`,maxWidth:"90%",textAlign:"center"}}>{toast}</div>)}
@@ -1945,6 +1983,29 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
       })()}
 
       {tab==="me"&&(<>
+        {/* Profile Completion Reminder (if any optional steps skipped) */}
+        {(()=>{
+          const skipped=["blockers","habits","planningHabit","motivation"].filter(k=>profile[k]===null);
+          if(skipped.length===0||reminderDismissed)return null;
+          return(<div style={{background:`${T.accent}10`,border:`1.5px dashed ${T.accent}50`,borderRadius:16,padding:"16px 18px",marginBottom:12,position:"relative"}}>
+            <button onClick={()=>{
+              try{
+                const raw=localStorage.getItem(`bitelyze_skip_reminder_${uid}`);
+                const prev=raw?JSON.parse(raw):{count:0};
+                const next={count:(prev.count||0)+1,lastDismissed:Date.now()};
+                localStorage.setItem(`bitelyze_skip_reminder_${uid}`,JSON.stringify(next));
+              }catch(e){}
+              setReminderDismissed(true);
+            }} style={{position:"absolute",top:6,right:6,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:"none",color:T.muted,cursor:"pointer",fontFamily:"inherit"}}><X size={16}/></button>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,paddingRight:20}}>
+              <Sparkles size={18} color={T.accent}/>
+              <p style={{fontSize:15,fontWeight:700,color:T.text}}>Unlock better coaching</p>
+            </div>
+            <p style={{fontSize:13,color:T.muted,lineHeight:1.5,marginBottom:12,paddingRight:20}}>Answer {skipped.length} more question{skipped.length>1?"s":""} to get more personalized tips. Takes 60 seconds.</p>
+            <button onClick={()=>setCondensedStepIdx(0)} style={{width:"100%",padding:"10px",borderRadius:10,border:"none",background:T.accent,color:"#000",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6}}>Complete my profile <ArrowRight size={13}/></button>
+          </div>);
+        })()}
+
         {/* Profile Hero with gradient */}
         <div style={{background:`${T.accent}08`,border:`1.5px solid ${T.accent}20`,borderRadius:22,padding:"28px 20px",marginBottom:14,textAlign:"center",position:"relative",overflow:"hidden",boxShadow:`0 8px 32px ${T.accent}08`}}>
           <div style={{position:"absolute",inset:0,background:`linear-gradient(135deg,${T.accent}06,${T.purple}04,${T.blue}06)`,pointerEvents:"none"}}/>
