@@ -205,16 +205,25 @@ Rate HIGH (clear image, identifiable, measurable portions), MEDIUM (partial obst
 Score holistically: whole foods vs processed, protein adequacy, fiber, saturated fat/sugar, veggies/fruits, calorie density.
 1-3 Indulgent, 4-6 Balanced, 7-8 Nutritious, 9-10 Exceptional.
 
-━━━ STEP 7: SUGGESTIONS ━━━
+━━━ STEP 7: SUGGESTIONS — KEEP SHORT ━━━
 Exactly 4 suggestions referencing the actual food. Mix required:
 - ONE portion control tip
 - ONE food quality or swap tip
 - ONE suggestion for what to eat NEXT today
 - ONE positive observation if health score 6+
+Each suggestion: MAX 12 WORDS. Punchy, action-oriented, no fluff.
 Each needs a specific relevant emoji. No generic lightbulbs.
 
-━━━ STEP 8: PORTION TIP ━━━
-One sentence on the specific portion size.
+━━━ STEP 8: PORTION TIP — ONE SHORT LINE ━━━
+Max 10 words. Direct advice on the portion.
+
+━━━ TEXT LENGTH RULES (STRICT) ━━━
+- verdict: MAX 12 WORDS, one sentence
+- portionTip: MAX 10 WORDS
+- confidenceNote: MAX 10 WORDS
+- suggestions[].text: MAX 12 WORDS each
+- smarterSwaps[].reason: MAX 8 WORDS
+Be concise. Cut filler words. No hedging like "you might want to consider" — say "swap X for Y".
 
 ━━━ CRITICAL RULES ━━━
 1. NEVER return calorie ranges. Always commit to a single best estimate.
@@ -227,17 +236,17 @@ One sentence on the specific portion size.
 Return ONLY valid JSON. No markdown, no backticks.
 
 {
-  "foodName": "Main dish or meal name",
+  "foodName": "Main dish or meal name (max 6 words)",
   "items": [{"name": "...", "portion": "...", "calories": 0, "protein": 0, "carbs": 0, "fat": 0}],
   "totalCalories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0,
   "servingSize": "...", "cookingMethod": "...",
   "confidence": "high/medium/low",
-  "confidenceNote": "Specific reason if not high, else empty string",
+  "confidenceNote": "Max 10 words if not high, else empty string",
   "healthScore": 0, "healthScoreLabel": "Indulgent/Balanced/Nutritious/Exceptional",
-  "verdict": "One-sentence honest verdict",
-  "portionTip": "Specific advice on this portion size",
-  "suggestions": [{"icon": "emoji", "text": "tailored suggestion"}],
-  "smarterSwaps": [{"from": "...", "to": "...", "reason": "..."}]
+  "verdict": "Max 12 words, one sentence",
+  "portionTip": "Max 10 words, direct portion advice",
+  "suggestions": [{"icon": "emoji", "text": "Max 12 words, punchy"}],
+  "smarterSwaps": [{"from": "...", "to": "...", "reason": "Max 8 words"}]
 }
 
 Context: Analyzing for ${profileStr}. User has eaten ${consumed}kcal of their ${dailyGoal}kcal goal so far today.`;
