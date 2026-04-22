@@ -621,9 +621,245 @@ function StepBody({p,setP,onNext,onBack}){const[helpType,setHelpType]=useState(n
 
 function StepActivity({p,setP,onNext,onBack}){const opts=[{k:"sedentary",l:"Sedentary",d:"Desk job, little or no exercise",Icon:Sofa},{k:"light",l:"Lightly Active",d:"Walk sometimes, light exercise 1–3x/week",Icon:Footprints},{k:"moderate",l:"Moderately Active",d:"Exercise 3–5x per week",Icon:Activity},{k:"active",l:"Very Active",d:"Hard training 6–7x/week",Icon:Dumbbell},{k:"very_active",l:"Extremely Active",d:"Physical job + daily training",Icon:Zap}];return(<div className="slideIn" style={{minHeight:"100vh",background:T.bg}}><div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`}}><button onClick={onBack} style={{background:"none",border:"none",color:T.muted,fontSize:22,cursor:"pointer",marginBottom:14,display:"inline-flex",alignItems:"center"}}><ArrowLeft size={20}/></button><ProgressDots total={4} current={2}/><h2 style={{fontSize:22,fontWeight:800,marginBottom:4,color:T.text}}>Activity Level</h2><p style={{color:T.muted,fontSize:13}}>Step 3 of 4 — How active are you?</p></div><div style={{padding:"20px 20px 40px",maxWidth:480,margin:"0 auto"}}>{opts.map(o=>{const Icon=o.Icon;return(<div key={o.k} onClick={()=>setP(x=>({...x,activity:o.k}))} style={{display:"flex",alignItems:"center",gap:13,padding:"13px 15px",marginBottom:9,background:p.activity===o.k?T.accentDim:T.inputBg,border:`1.5px solid ${p.activity===o.k?T.accent:T.border}`,borderRadius:14,cursor:"pointer",transition:"all .18s"}}><span style={{fontSize:24,display:"inline-flex",alignItems:"center"}}><Icon size={24} color={p.activity===o.k?T.accent:T.muted}/></span><div style={{flex:1}}><p style={{fontSize:14,fontWeight:700,color:p.activity===o.k?T.accent:T.text,marginBottom:2}}>{o.l}</p><p style={{fontSize:12,color:T.muted}}>{o.d}</p></div>{p.activity===o.k&&<span style={{color:T.accent,display:"inline-flex",alignItems:"center"}}><Check size={18}/></span>}</div>);})}<Btn onClick={onNext} disabled={!p.activity} style={{marginTop:8}}><span style={{display:"inline-flex",alignItems:"center",gap:6}}>Continue <ArrowRight size={14}/></span></Btn></div></div>);}
 
-function StepGoal({p,setP,onNext,onBack}){const goals=[{k:"lose_fast",l:"Lose Weight Fast",d:"-750 kcal/day · ~0.75 kg/week",Icon:Flame},{k:"lose",l:"Lose Weight",d:"-500 kcal/day · ~0.5 kg/week",Icon:TrendingDown,best:true},{k:"lose_slow",l:"Lose Gradually",d:"-250 kcal/day · ~0.25 kg/week",Icon:Sprout},{k:"maintain",l:"Maintain Weight",d:"Eat at maintenance calories",Icon:Scale},{k:"gain",l:"Build Muscle",d:"+300 kcal/day · lean bulk",Icon:Dumbbell}];return(<div className="slideIn" style={{minHeight:"100vh",background:T.bg}}><div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`}}><button onClick={onBack} style={{background:"none",border:"none",color:T.muted,fontSize:22,cursor:"pointer",marginBottom:14,display:"inline-flex",alignItems:"center"}}><ArrowLeft size={20}/></button><ProgressDots total={4} current={3}/><h2 style={{fontSize:22,fontWeight:800,marginBottom:4,color:T.text}}>Your Goal</h2><p style={{color:T.muted,fontSize:13}}>Step 4 of 4 — Sets your daily calorie target</p></div><div style={{padding:"20px 20px 40px",maxWidth:480,margin:"0 auto"}}>{goals.map(g=>{const Icon=g.Icon;return(<div key={g.k} onClick={()=>setP(x=>({...x,goal:g.k}))} style={{display:"flex",alignItems:"center",gap:13,padding:"13px 15px",marginBottom:9,background:p.goal===g.k?T.accentDim:T.inputBg,border:`1.5px solid ${p.goal===g.k?T.accent:T.border}`,borderRadius:14,cursor:"pointer",transition:"all .18s"}}><span style={{fontSize:24,display:"inline-flex",alignItems:"center"}}><Icon size={24} color={p.goal===g.k?T.accent:T.muted}/></span><div style={{flex:1}}><p style={{fontSize:14,fontWeight:700,color:p.goal===g.k?T.accent:T.text,marginBottom:2}}>{g.l}{g.best&&<span style={{fontSize:9,background:T.accent,color:"#000",borderRadius:5,padding:"2px 6px",marginLeft:7,fontWeight:800}}>BEST</span>}</p><p style={{fontSize:12,color:T.muted}}>{g.d}</p></div>{p.goal===g.k&&<span style={{color:T.accent,display:"inline-flex",alignItems:"center"}}><Check size={18}/></span>}</div>);})}<Btn onClick={onNext} disabled={!p.goal} style={{marginTop:8}}><span style={{display:"inline-flex",alignItems:"center",gap:6}}>Calculate My Plan <ArrowRight size={14}/></span></Btn></div></div>);}
+function StepGoal({p,setP,onNext,onBack}){const goals=[{k:"lose_fast",l:"Lose Weight Fast",Icon:Flame},{k:"lose",l:"Lose Weight",Icon:TrendingDown,best:true},{k:"lose_slow",l:"Lose Gradually",Icon:Sprout},{k:"maintain",l:"Maintain Weight",Icon:Scale},{k:"gain",l:"Build Muscle",Icon:Dumbbell}];return(<div className="slideIn" style={{minHeight:"100vh",background:T.bg}}><div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`}}><button onClick={onBack} style={{background:"none",border:"none",color:T.muted,fontSize:22,cursor:"pointer",marginBottom:14,display:"inline-flex",alignItems:"center"}}><ArrowLeft size={20}/></button><ProgressDots total={9} current={3}/><h2 style={{fontSize:22,fontWeight:800,marginBottom:4,color:T.text}}>Your Goal</h2><p style={{color:T.muted,fontSize:13}}>Step 4 of 9 — What are you here to do?</p></div><div style={{padding:"20px 20px 40px",maxWidth:480,margin:"0 auto"}}>{goals.map(g=>{const Icon=g.Icon;return(<div key={g.k} onClick={()=>setP(x=>({...x,goal:g.k}))} style={{display:"flex",alignItems:"center",gap:13,padding:"15px 15px",marginBottom:9,background:p.goal===g.k?T.accentDim:T.inputBg,border:`1.5px solid ${p.goal===g.k?T.accent:T.border}`,borderRadius:14,cursor:"pointer",transition:"all .18s"}}><span style={{fontSize:24,display:"inline-flex",alignItems:"center"}}><Icon size={24} color={p.goal===g.k?T.accent:T.muted}/></span><div style={{flex:1}}><p style={{fontSize:14,fontWeight:700,color:p.goal===g.k?T.accent:T.text}}>{g.l}{g.best&&<span style={{fontSize:9,background:T.accent,color:"#000",borderRadius:5,padding:"2px 6px",marginLeft:7,fontWeight:800}}>BEST</span>}</p></div>{p.goal===g.k&&<span style={{color:T.accent,display:"inline-flex",alignItems:"center"}}><Check size={18}/></span>}</div>);})}<Btn onClick={onNext} disabled={!p.goal} style={{marginTop:8}}><span style={{display:"inline-flex",alignItems:"center",gap:6}}>Continue <ArrowRight size={14}/></span></Btn></div></div>);}
 
-function PlanReady({profile,goal,onStart}){const p=profile||{};const w=parseFloat(p.weight)||0,h=parseFloat(p.height)||0,a=parseFloat(p.age)||0;const acts={sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very_active:1.9};const bmr=w&&h&&a?Math.round(p.gender==="Male"?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161):0;const tdee=Math.round(bmr*(acts[p.activity]||1.375));const bmi=h>0?(w/((h/100)**2)).toFixed(1):0;const bi=bmi<18.5?["Underweight",T.blue]:bmi<25?["Healthy",T.accent]:bmi<30?["Overweight",T.orange]:["Obese",T.danger];return(<div className="fadeIn" style={{minHeight:"100vh",background:T.bg,backgroundImage:`radial-gradient(ellipse at 50% 10%, #00e5a010 0%, transparent 58%)`,paddingBottom:48}}><div style={{padding:"36px 22px 22px",textAlign:"center"}}><div className="pop" style={{width:76,height:76,borderRadius:22,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:38,margin:"0 auto 18px",boxShadow:`0 0 40px ${T.accentGlow}`,color:"#000"}}><Target size={38}/></div><h2 style={{fontSize:26,fontWeight:900,marginBottom:7,color:T.text}}>Your Plan is Ready,<br/><span style={{color:T.accent}}>{p.name}!</span></h2><p style={{color:T.muted,fontSize:13}}>Here are your personalised targets</p></div><div style={{padding:"0 18px",maxWidth:480,margin:"0 auto"}}><div style={{background:`${T.accent}08`,border:`1.5px solid ${T.accent}45`,borderRadius:20,padding:"26px 20px",marginBottom:13,textAlign:"center"}}><p style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:"1.2px",marginBottom:9}}>Daily Calorie Goal</p><p style={{fontSize:64,fontWeight:900,color:T.accent,lineHeight:1}}>{goal}</p><p style={{fontSize:13,color:T.muted,marginTop:5}}>kcal per day</p></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:13}}>{[["BMR",`${bmr} kcal`,"Calories at rest",T.blue],["TDEE",`${tdee} kcal`,"Maintenance",T.orange],["BMI",bi[0],`${bmi} kg/m²`,bi[1]],["Target",p.targetWeight?`${p.targetWeight} kg`:"—","Goal weight",T.accent]].map(([l,v,s,c])=>(<div key={l} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"13px 15px"}}><p style={{fontSize:10,color:T.muted,textTransform:"uppercase",letterSpacing:".6px",marginBottom:5}}>{l}</p><p style={{fontSize:16,fontWeight:800,color:c,marginBottom:3}}>{v}</p><p style={{fontSize:11,color:T.muted}}>{s}</p></div>))}</div><Card><CardTitle icon={<FlaskConical size={16} color={T.accent}/>}>Recommended Daily Macros</CardTitle><MacroBar label={`Protein — ${Math.round(goal*.3/4)}g`} val={Math.round(goal*.3/4)} max={200} color={T.blue}/><MacroBar label={`Carbs — ${Math.round(goal*.45/4)}g`} val={Math.round(goal*.45/4)} max={350} color={T.orange}/><MacroBar label={`Fat — ${Math.round(goal*.25/9)}g`} val={Math.round(goal*.25/9)} max={100} color="#ff6b9d"/></Card><Btn onClick={onStart} style={{fontSize:16,padding:"15px"}}><span style={{display:"inline-flex",alignItems:"center",gap:8}}><Rocket size={16}/> Start Tracking</span></Btn></div></div>);}
+function MotivationalSlide({Icon,headline,subheadline,onContinue,autoMs=3000,showButton=true,showDots=false}){
+  useEffect(()=>{if(!autoMs)return;const t=setTimeout(()=>{onContinue&&onContinue();},autoMs);return()=>clearTimeout(t);},[autoMs,onContinue]);
+  return(<div className="fadeIn" style={{minHeight:"100vh",background:"#090912",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"calc(40px + env(safe-area-inset-top)) 22px 40px",textAlign:"center"}}>
+    <div className="bounce-pop" style={{width:112,height:112,borderRadius:"50%",background:`${T.accent}15`,border:`1px solid ${T.accent}40`,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:30,animation:"bouncePop .5s ease forwards, pulseGlow 2.4s ease-in-out infinite"}}>
+      <Icon size={64} color={T.accent}/>
+    </div>
+    <h1 style={{fontSize:32,fontWeight:900,letterSpacing:"-0.5px",color:"#ffffff",marginBottom:14,lineHeight:1.2}}>{headline}</h1>
+    <p style={{color:"#9999a8",fontSize:14,lineHeight:1.7,maxWidth:320}}>{subheadline}</p>
+    {showDots&&<div style={{display:"flex",gap:8,marginTop:22}}>{[0,0.2,0.4].map((d,i)=>(<div key={i} style={{width:9,height:9,borderRadius:"50%",background:T.accent,animation:`pulse 1.2s ease-in-out infinite`,animationDelay:`${d}s`}}/>))}</div>}
+    {showButton&&<button onClick={onContinue} style={{marginTop:38,padding:"10px 26px",borderRadius:99,border:`1px solid ${T.accent}50`,background:"transparent",color:T.accent,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:6}}>Continue <ArrowRight size={13}/></button>}
+  </div>);
+}
+
+function Motivational1({onContinue}){return(<MotivationalSlide Icon={Trophy} headline="You've got this." subheadline="People who log consistently lose 2x more weight than those who don't. Let's build a plan that works for you." onContinue={onContinue} autoMs={3000}/>);}
+
+function Motivational2({onContinue}){return(<MotivationalSlide Icon={Lightbulb} headline="Great choice!" subheadline="We're almost done building your personalized plan. A few more questions to make it perfect for you." onContinue={onContinue} autoMs={3000}/>);}
+
+function Motivational3({onContinue}){return(<MotivationalSlide Icon={Heart} headline="Thank you for trusting us." subheadline="Now let's build your personalized plan..." onContinue={onContinue} autoMs={2500} showButton={false} showDots={true}/>);}
+
+function StepGoalSpeed({p,setP,onNext,onBack}){
+  const cw=parseFloat(p.weight)||0;
+  const tw=parseFloat(p.targetWeight)||cw;
+  const weightDelta=Math.abs(cw-tw)||0;
+  const speed=parseFloat(p.goalSpeed)||0.5;
+  const isGain=p.goal==="gain";
+  const acts={sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very_active:1.9};
+  const a=parseFloat(p.age)||0,h=parseFloat(p.height)||0;
+  const bmr=cw&&h&&a?Math.round(p.gender==="Male"?10*cw+6.25*h-5*a+5:10*cw+6.25*h-5*a-161):0;
+  const tdee=Math.round(bmr*(acts[p.activity]||1.375));
+  const dailyDelta=Math.round(speed*7700/7);
+  const dailyGoal=isGain?tdee+dailyDelta:tdee-dailyDelta;
+  const weeks=weightDelta>0?Math.ceil(weightDelta/speed):0;
+  const timeLabel=weeks<=0?"—":weeks>8?`${Math.round(weeks/4.345)} months`:`${weeks} weeks`;
+  const copy={0.25:"A sustainable pace. Easy to maintain long-term.",0.5:"The most balanced pace, motivating and ideal for most users.",0.75:"Above average pace — requires more discipline.",1:"Ambitious but requires discipline. Results will be visible quickly."};
+  const fillPct=((speed-0.25)/(1-0.25))*100;
+  return(<div className="slideIn" style={{minHeight:"100vh",background:T.bg}}>
+    <div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`}}>
+      <button onClick={onBack} style={{background:"none",border:"none",color:T.muted,fontSize:22,cursor:"pointer",marginBottom:14,display:"inline-flex",alignItems:"center"}}><ArrowLeft size={20}/></button>
+      <ProgressDots total={9} current={4}/>
+      <h2 style={{fontSize:22,fontWeight:800,marginBottom:4,color:T.text}}>How fast do you want to reach your goal?</h2>
+      <p style={{color:T.muted,fontSize:13}}>Step 5 of 9 — Choose your pace</p>
+    </div>
+    <div style={{padding:"24px 22px 40px",maxWidth:480,margin:"0 auto"}}>
+      <p style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:".7px",fontWeight:700,marginBottom:10,textAlign:"center"}}>Weight {isGain?"gain":"loss"} speed per week</p>
+      <p style={{fontSize:48,fontWeight:900,color:T.accent,textAlign:"center",lineHeight:1,marginBottom:4}}>{speed} kg</p>
+      <p style={{fontSize:12,color:T.muted,textAlign:"center",marginBottom:22}}>per week</p>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:T.muted,marginBottom:10,padding:"0 4px"}}>
+        <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:18}}>🦥</span> Slow</span>
+        <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:18}}>🐰</span> Recommended</span>
+        <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:18}}>🐆</span> Fast</span>
+      </div>
+      <div style={{position:"relative",marginBottom:22}}>
+        <div style={{height:8,borderRadius:99,background:T.barBg,overflow:"hidden"}}>
+          <div style={{height:"100%",width:`${fillPct}%`,background:`linear-gradient(90deg,${T.accent},#00b87a)`,borderRadius:99,transition:"width .25s ease"}}/>
+        </div>
+        <input type="range" min={0.25} max={1} step={0.25} value={speed} onChange={e=>setP(x=>({...x,goalSpeed:parseFloat(e.target.value)}))} style={{position:"absolute",inset:0,width:"100%",height:"100%",opacity:0,cursor:"pointer"}}/>
+        <div style={{position:"absolute",top:"50%",left:`${fillPct}%`,transform:"translate(-50%,-50%)",width:22,height:22,borderRadius:"50%",background:"#ffffff",boxShadow:`0 0 0 3px ${T.accent}, 0 2px 6px rgba(0,0,0,0.2)`,pointerEvents:"none"}}/>
+      </div>
+      <div style={{background:`${T.accent}12`,border:`1px solid ${T.accent}30`,borderRadius:14,padding:"16px 16px",marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:10}}>
+          <Target size={18} color={T.accent} style={{flexShrink:0,marginTop:2}}/>
+          <p style={{fontSize:14,fontWeight:700,color:T.text,lineHeight:1.5}}>You'll reach your goal in ~{timeLabel}</p>
+        </div>
+        <p style={{fontSize:12,color:T.muted,lineHeight:1.55,marginBottom:10}}>{copy[speed]||copy[0.5]}</p>
+        <div style={{height:1,background:`${T.accent}20`,marginBottom:10}}/>
+        <p style={{fontSize:12,color:T.text,lineHeight:1.5}}>Your daily calorie goal will be <span style={{color:T.accent,fontWeight:800}}>{dailyGoal} kcal</span></p>
+      </div>
+      <Btn onClick={onNext}><span style={{display:"inline-flex",alignItems:"center",gap:6}}>Continue <ArrowRight size={14}/></span></Btn>
+    </div>
+  </div>);
+}
+
+function StepBlockers({p,setP,onNext,onBack}){
+  const opts=[{id:"consistency",icon:"📊",label:"Lack of consistency"},{id:"habits",icon:"🍔",label:"Unhealthy eating habits"},{id:"support",icon:"🤝",label:"Lack of support"},{id:"schedule",icon:"📅",label:"Busy schedule"},{id:"inspiration",icon:"🍳",label:"Lack of meal inspiration"},{id:"stress",icon:"😰",label:"Stress and emotional eating"},{id:"cost",icon:"💸",label:"Healthy food feels expensive"},{id:"start",icon:"🤷",label:"I don't know where to start"}];
+  const[err,setErr]=useState("");
+  const selected=p.blockers||[];
+  const toggle=(id)=>{
+    const has=selected.includes(id);
+    if(has){setP(x=>({...x,blockers:(x.blockers||[]).filter(b=>b!==id)}));setErr("");}
+    else{
+      if(selected.length>=3){setErr("You can select up to 3.");setTimeout(()=>setErr(""),2200);return;}
+      setP(x=>({...x,blockers:[...(x.blockers||[]),id]}));setErr("");
+    }
+  };
+  return(<div className="slideIn" style={{minHeight:"100vh",background:T.bg}}>
+    <div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`}}>
+      <button onClick={onBack} style={{background:"none",border:"none",color:T.muted,fontSize:22,cursor:"pointer",marginBottom:14,display:"inline-flex",alignItems:"center"}}><ArrowLeft size={20}/></button>
+      <ProgressDots total={9} current={5}/>
+      <h2 style={{fontSize:22,fontWeight:800,marginBottom:4,color:T.text}}>What's stopping you from reaching your goals?</h2>
+      <p style={{color:T.muted,fontSize:13}}>Step 6 of 9 — Select all that apply</p>
+    </div>
+    <div style={{padding:"20px 20px 40px",maxWidth:480,margin:"0 auto"}}>
+      <p style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:".7px",fontWeight:700,marginBottom:12}}>Select up to 3</p>
+      {opts.map(o=>{const on=selected.includes(o.id);return(<div key={o.id} onClick={()=>toggle(o.id)} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 15px",marginBottom:9,background:on?`${T.accent}15`:T.inputBg,border:`1.5px solid ${on?T.accent:T.border}`,borderRadius:14,cursor:"pointer",transition:"all .18s"}}>
+        <span style={{fontSize:22,display:"inline-flex",alignItems:"center"}}>{o.icon}</span>
+        <span style={{flex:1,fontSize:14,fontWeight:700,color:on?T.accent:T.text}}>{o.label}</span>
+        {on&&<Check size={18} color={T.accent}/>}
+      </div>);})}
+      {err&&<p style={{fontSize:12,color:T.orange,marginBottom:10,textAlign:"center"}}>{err}</p>}
+      <Btn onClick={onNext} disabled={selected.length===0} style={{marginTop:8}}><span style={{display:"inline-flex",alignItems:"center",gap:6}}>Continue <ArrowRight size={14}/></span></Btn>
+    </div>
+  </div>);
+}
+
+function StepHabits({p,setP,onNext,onBack}){
+  const rec=[["track_macros","Track macros"],["track_calories","Track calories"],["plan_meals","Plan more meals"]];
+  const more=[["track_nutrients","Track nutrients"],["meal_prep","Meal prep and cook"],["eat_mindfully","Eat mindfully"],["balanced","Eat a balanced diet"],["whole_foods","Eat whole foods"],["more_protein","Eat more protein"],["more_fiber","Eat more fiber"],["more_vegs","Eat more vegetables"],["more_fruit","Eat more fruit"],["more_water","Drink more water"],["sleep","Prioritize sleep"],["move_more","Move more"],["workout","Workout more"]];
+  useEffect(()=>{if((p.habits||[]).length===0&&p.goal){setP(x=>({...x,habits:["track_calories"]}));}},[]);
+  const[err,setErr]=useState("");
+  const selected=p.habits||[];
+  const toggle=(id)=>{
+    const has=selected.includes(id);
+    if(has){setP(x=>({...x,habits:(x.habits||[]).filter(h=>h!==id)}));setErr("");}
+    else{
+      if(selected.length>=3){setErr("You can select up to 3.");setTimeout(()=>setErr(""),2200);return;}
+      setP(x=>({...x,habits:[...(x.habits||[]),id]}));setErr("");
+    }
+  };
+  const Chip=({id,label})=>{const on=selected.includes(id);return(<button onClick={()=>toggle(id)} style={{padding:"9px 14px",borderRadius:99,border:`1px solid ${on?T.accent:T.border}`,background:on?T.accent:T.inputBg,color:on?"#000":T.muted,fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:6,transition:"all .18s"}}>{on&&<Check size={12}/>}{label}</button>);};
+  return(<div className="slideIn" style={{minHeight:"100vh",background:T.bg}}>
+    <div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`}}>
+      <button onClick={onBack} style={{background:"none",border:"none",color:T.muted,fontSize:22,cursor:"pointer",marginBottom:14,display:"inline-flex",alignItems:"center"}}><ArrowLeft size={20}/></button>
+      <ProgressDots total={9} current={6}/>
+      <h2 style={{fontSize:22,fontWeight:800,marginBottom:4,color:T.text}}>Which healthy habits matter most to you?</h2>
+      <p style={{color:T.muted,fontSize:13}}>Step 7 of 9 — Select up to 3</p>
+    </div>
+    <div style={{padding:"20px 20px 40px",maxWidth:480,margin:"0 auto"}}>
+      <p style={{fontSize:12,color:T.accent,fontWeight:700,marginBottom:14,textAlign:"center"}}>{selected.length} of 3 selected</p>
+      <p style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:".7px",fontWeight:700,marginBottom:10}}>Recommended for you</p>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:22}}>{rec.map(([id,label])=><Chip key={id} id={id} label={label}/>)}</div>
+      <p style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:".7px",fontWeight:700,marginBottom:10}}>More healthy habits</p>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:20}}>{more.map(([id,label])=><Chip key={id} id={id} label={label}/>)}</div>
+      {err&&<p style={{fontSize:12,color:T.orange,marginBottom:10,textAlign:"center"}}>{err}</p>}
+      <Btn onClick={onNext} disabled={selected.length===0}><span style={{display:"inline-flex",alignItems:"center",gap:6}}>Continue <ArrowRight size={14}/></span></Btn>
+    </div>
+  </div>);
+}
+
+function StepMealPlanning({p,setP,onNext,onBack}){
+  const opts=[{id:"never",label:"Never"},{id:"rarely",label:"Rarely"},{id:"occasionally",label:"Occasionally"},{id:"frequently",label:"Frequently"},{id:"always",label:"Always"}];
+  return(<div className="slideIn" style={{minHeight:"100vh",background:T.bg}}>
+    <div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`}}>
+      <button onClick={onBack} style={{background:"none",border:"none",color:T.muted,fontSize:22,cursor:"pointer",marginBottom:14,display:"inline-flex",alignItems:"center"}}><ArrowLeft size={20}/></button>
+      <ProgressDots total={9} current={7}/>
+      <h2 style={{fontSize:22,fontWeight:800,marginBottom:4,color:T.text}}>How often do you plan your meals in advance?</h2>
+      <p style={{color:T.muted,fontSize:13}}>Step 8 of 9 — One answer</p>
+    </div>
+    <div style={{padding:"22px 20px 40px",maxWidth:480,margin:"0 auto"}}>
+      {opts.map(o=>{const on=p.planningHabit===o.id;return(<div key={o.id} onClick={()=>setP(x=>({...x,planningHabit:o.id}))} style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",marginBottom:10,background:on?`${T.accent}10`:T.inputBg,border:`1.5px solid ${on?T.accent:T.border}`,borderRadius:12,cursor:"pointer",transition:"all .18s"}}>
+        <span style={{flex:1,fontSize:15,fontWeight:700,color:on?T.accent:T.text}}>{o.label}</span>
+        <span style={{width:20,height:20,borderRadius:"50%",border:`2px solid ${on?T.accent:T.muted}`,background:on?T.accent:"transparent",display:"inline-flex",alignItems:"center",justifyContent:"center",transition:"all .18s"}}>{on&&<span style={{width:8,height:8,borderRadius:"50%",background:"#000"}}/>}</span>
+      </div>);})}
+      <Btn onClick={onNext} disabled={!p.planningHabit} style={{marginTop:8}}><span style={{display:"inline-flex",alignItems:"center",gap:6}}>Continue <ArrowRight size={14}/></span></Btn>
+    </div>
+  </div>);
+}
+
+function StepMotivation({p,setP,onNext,onBack}){
+  const opts=[{id:"confidence",icon:"🌟",label:"Feel more confident in myself"},{id:"energy",icon:"⚡",label:"Have more energy and better mood"},{id:"clothes",icon:"👕",label:"Fit into clothes I love"},{id:"health",icon:"🏃",label:"Improve my physical health"},{id:"loved_ones",icon:"👨‍👩‍👧",label:"Be more present for loved ones"}];
+  return(<div className="slideIn" style={{minHeight:"100vh",background:T.bg}}>
+    <div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`}}>
+      <button onClick={onBack} style={{background:"none",border:"none",color:T.muted,fontSize:22,cursor:"pointer",marginBottom:14,display:"inline-flex",alignItems:"center"}}><ArrowLeft size={20}/></button>
+      <ProgressDots total={9} current={8}/>
+      <h2 style={{fontSize:22,fontWeight:800,marginBottom:4,color:T.text}}>What would achieving your goal mean to you?</h2>
+      <p style={{color:T.muted,fontSize:13}}>Step 9 of 9 — Select your top reason</p>
+    </div>
+    <div style={{padding:"22px 20px 40px",maxWidth:480,margin:"0 auto"}}>
+      {opts.map(o=>{const on=p.motivation===o.id;return(<div key={o.id} onClick={()=>setP(x=>({...x,motivation:o.id}))} style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",marginBottom:10,background:on?`${T.accent}15`:T.inputBg,border:`1.5px solid ${on?T.accent:T.border}`,borderRadius:14,cursor:"pointer",transition:"all .18s"}}>
+        <span style={{fontSize:24,display:"inline-flex",alignItems:"center"}}>{o.icon}</span>
+        <span style={{flex:1,fontSize:14,fontWeight:700,color:on?T.accent:T.text,lineHeight:1.35}}>{o.label}</span>
+        {on&&<Check size={18} color={T.accent}/>}
+      </div>);})}
+      <Btn onClick={onNext} disabled={!p.motivation} style={{marginTop:8}}><span style={{display:"inline-flex",alignItems:"center",gap:6}}>Continue <ArrowRight size={14}/></span></Btn>
+    </div>
+  </div>);
+}
+
+function ComparisonSlide({onContinue}){
+  const[animate,setAnimate]=useState(false);
+  const[leftNum,setLeftNum]=useState(0);
+  const[rightNum,setRightNum]=useState(0);
+  useEffect(()=>{
+    const t1=setTimeout(()=>setAnimate(true),120);
+    const dur=1100;const start=Date.now();
+    const tick=()=>{const e=Math.min(1,(Date.now()-start)/dur);const ease=1-Math.pow(1-e,3);setLeftNum(Math.round(20*ease));setRightNum(parseFloat((2*ease).toFixed(1)));if(e<1)raf=requestAnimationFrame(tick);};
+    let raf=requestAnimationFrame(tick);
+    const t2=setTimeout(()=>{onContinue&&onContinue();},4000);
+    return()=>{clearTimeout(t1);clearTimeout(t2);cancelAnimationFrame(raf);};
+  },[onContinue]);
+  return(<div className="fadeIn" style={{minHeight:"100vh",background:"#090912",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"calc(40px + env(safe-area-inset-top)) 22px 40px",textAlign:"center"}}>
+    <h1 style={{fontSize:24,fontWeight:800,letterSpacing:"-0.3px",color:"#ffffff",marginBottom:30,lineHeight:1.3,maxWidth:340}}>Lose 2x more weight with Bitelyze than without.</h1>
+    <div style={{background:`${T.accent}08`,border:`1px solid ${T.accent}25`,borderRadius:20,padding:"28px 30px 22px",width:"100%",maxWidth:320,marginBottom:18}}>
+      <div style={{display:"flex",alignItems:"flex-end",justifyContent:"center",gap:36,height:180,marginBottom:14}}>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,height:"100%",justifyContent:"flex-end"}}>
+          <div style={{width:54,height:animate?36:0,background:"#3a3a4a",borderRadius:"8px 8px 0 0",transition:"height 1.1s cubic-bezier(0.16,1,0.3,1)"}}/>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,height:"100%",justifyContent:"flex-end"}}>
+          <div style={{width:54,height:animate?180:0,background:`linear-gradient(180deg,${T.accent},#00b87a)`,borderRadius:"8px 8px 0 0",transition:"height 1.1s cubic-bezier(0.16,1,0.3,1)",boxShadow:`0 0 24px ${T.accent}60`}}/>
+        </div>
+      </div>
+      <div style={{display:"flex",justifyContent:"center",gap:36}}>
+        <div style={{width:54,textAlign:"center"}}>
+          <p style={{fontSize:20,fontWeight:900,color:"#9999a8",marginBottom:2}}>{leftNum}%</p>
+          <p style={{fontSize:10,color:"#8888a0",lineHeight:1.3}}>Without Bitelyze</p>
+        </div>
+        <div style={{width:54,textAlign:"center"}}>
+          <p style={{fontSize:20,fontWeight:900,color:T.accent,marginBottom:2}}>{rightNum}X</p>
+          <p style={{fontSize:10,color:T.accent,lineHeight:1.3,fontWeight:700}}>With Bitelyze</p>
+        </div>
+      </div>
+    </div>
+    <p style={{color:"#9999a8",fontSize:13,lineHeight:1.6,maxWidth:320,marginBottom:14}}>Bitelyze keeps you accountable, honest with yourself and consistent. That's what actually drives results.</p>
+    <p style={{color:"#55556a",fontSize:9,marginBottom:28}}>Based on average user outcomes over 12 weeks.</p>
+    <button onClick={onContinue} style={{padding:"10px 26px",borderRadius:99,border:`1px solid ${T.accent}50`,background:"transparent",color:T.accent,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:6}}>Continue <ArrowRight size={13}/></button>
+  </div>);
+}
+
+function PlanReady({profile,goal,onStart}){const p=profile||{};const w=parseFloat(p.weight)||0,h=parseFloat(p.height)||0,a=parseFloat(p.age)||0;const acts={sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very_active:1.9};const bmr=w&&h&&a?Math.round(p.gender==="Male"?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161):0;const tdee=Math.round(bmr*(acts[p.activity]||1.375));const bmi=h>0?(w/((h/100)**2)).toFixed(1):0;const bi=bmi<18.5?["Underweight",T.blue]:bmi<25?["Healthy",T.accent]:bmi<30?["Overweight",T.orange]:["Obese",T.danger];
+  const goalLabels={lose_fast:"weight loss",lose:"weight loss",lose_slow:"weight loss",maintain:"weight maintenance",gain:"muscle gain"};
+  const motivationLabels={confidence:"Feel more confident in myself",energy:"Have more energy and better mood",clothes:"Fit into clothes I love",health:"Improve my physical health",loved_ones:"Be more present for loved ones"};
+  const gLabel=goalLabels[p.goal]||"your goals";
+  const showSpeed=p.goal&&p.goal!=="maintain"&&p.goalSpeed;
+  return(<div className="fadeIn" style={{minHeight:"100vh",background:T.bg,backgroundImage:`radial-gradient(ellipse at 50% 10%, #00e5a010 0%, transparent 58%)`,paddingBottom:48}}>
+    <div style={{padding:"28px 22px 12px",display:"flex",justifyContent:"center"}}>
+      <div style={{display:"inline-flex",alignItems:"center",gap:6,background:`${T.accent}10`,border:`1px solid ${T.accent}30`,borderRadius:99,padding:"6px 12px"}}>
+        <Target size={12} color={T.accent}/>
+        <span style={{fontSize:11,color:T.accent,fontWeight:700}}>Built for {gLabel}{showSpeed?` at ${p.goalSpeed} kg/week`:""}</span>
+      </div>
+    </div>
+    <div style={{padding:"10px 22px 22px",textAlign:"center"}}><div className="pop" style={{width:76,height:76,borderRadius:22,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:38,margin:"0 auto 18px",boxShadow:`0 0 40px ${T.accentGlow}`,color:"#000"}}><Target size={38}/></div><h2 style={{fontSize:26,fontWeight:900,marginBottom:7,color:T.text}}>Your Plan is Ready,<br/><span style={{color:T.accent}}>{p.name}!</span></h2><p style={{color:T.muted,fontSize:13}}>Here are your personalised targets</p></div>
+    <div style={{padding:"0 18px",maxWidth:480,margin:"0 auto"}}><div style={{background:`${T.accent}08`,border:`1.5px solid ${T.accent}45`,borderRadius:20,padding:"26px 20px",marginBottom:13,textAlign:"center"}}><p style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:"1.2px",marginBottom:9}}>Daily Calorie Goal</p><p style={{fontSize:64,fontWeight:900,color:T.accent,lineHeight:1}}>{goal}</p><p style={{fontSize:13,color:T.muted,marginTop:5}}>kcal per day</p></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:13}}>{[["BMR",`${bmr} kcal`,"Calories at rest",T.blue],["TDEE",`${tdee} kcal`,"Maintenance",T.orange],["BMI",bi[0],`${bmi} kg/m²`,bi[1]],["Target",p.targetWeight?`${p.targetWeight} kg`:"—","Goal weight",T.accent]].map(([l,v,s,c])=>(<div key={l} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"13px 15px"}}><p style={{fontSize:10,color:T.muted,textTransform:"uppercase",letterSpacing:".6px",marginBottom:5}}>{l}</p><p style={{fontSize:16,fontWeight:800,color:c,marginBottom:3}}>{v}</p><p style={{fontSize:11,color:T.muted}}>{s}</p></div>))}</div>
+    <Card><CardTitle icon={<FlaskConical size={16} color={T.accent}/>}>Recommended Daily Macros</CardTitle><MacroBar label={`Protein — ${Math.round(goal*.3/4)}g`} val={Math.round(goal*.3/4)} max={200} color={T.blue}/><MacroBar label={`Carbs — ${Math.round(goal*.45/4)}g`} val={Math.round(goal*.45/4)} max={350} color={T.orange}/><MacroBar label={`Fat — ${Math.round(goal*.25/9)}g`} val={Math.round(goal*.25/9)} max={100} color="#ff6b9d"/></Card>
+    {p.motivation&&motivationLabels[p.motivation]&&<div style={{background:`linear-gradient(135deg, ${T.accent}12, ${T.bg})`,border:`1px solid ${T.accent}30`,borderRadius:14,padding:"15px 16px",marginBottom:14}}>
+      <p style={{fontSize:10,color:T.muted,textTransform:"uppercase",letterSpacing:"1.2px",fontWeight:700,marginBottom:6}}>Your Reason</p>
+      <p style={{fontSize:14,fontWeight:800,color:T.accent,lineHeight:1.4}}>{motivationLabels[p.motivation]}</p>
+    </div>}
+    <Btn onClick={onStart} style={{fontSize:16,padding:"15px"}}><span style={{display:"inline-flex",alignItems:"center",gap:8}}><Rocket size={16}/> Start Tracking</span></Btn></div></div>);}
 
 function DashboardTour({name,onDone}){
   const[step,setStep]=useState(0);
@@ -1756,7 +1992,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
 
 // Route helpers
 const routeMap={"/onboarding":"onboarding","/auth":"auth","/auth/login":"auth-login","/auth/signup":"auth-signup","/setup":"welcome","/dashboard":"app"};
-const screenToRoute={"onboarding":"/onboarding","auth":"/auth","auth-login":"/auth/login","auth-signup":"/auth/signup","welcome":"/setup","s1":"/setup","s2":"/setup","s3":"/setup","s4":"/setup","plan":"/setup","app":"/dashboard"};
+const screenToRoute={"onboarding":"/onboarding","auth":"/auth","auth-login":"/auth/login","auth-signup":"/auth/signup","welcome":"/setup","s1":"/setup","s2":"/setup","s3":"/setup","s4":"/setup","m1":"/setup","s5":"/setup","m2":"/setup","s6":"/setup","s7":"/setup","s8":"/setup","s9":"/setup","compare":"/setup","m3":"/setup","plan":"/setup","app":"/dashboard"};
 const navigate=(path)=>{if(window.location.pathname!==path)window.history.pushState(null,"",path);};
 
 export default function App(){
@@ -1769,13 +2005,13 @@ export default function App(){
   // Restore screen from localStorage or URL on mount
   const[screen,setScreen]=useState(()=>{
     const saved=localStorage.getItem('bitelyze_screen');
-    if(saved&&["welcome","s1","s2","s3","s4","plan","app"].includes(saved))return saved;
+    if(saved&&["welcome","s1","s2","s3","s4","m1","s5","m2","s6","s7","s8","s9","compare","m3","plan","app"].includes(saved))return saved;
     const p=window.location.pathname;
     const mapped=routeMap[p];
     if(mapped==="app")return"app";
     return"welcome";
   });
-  const[profile,setProfile]=useState({name:"",age:"",gender:"Male",height:"",weight:"",targetWeight:"",activity:"",goal:""});
+  const[profile,setProfile]=useState({name:"",age:"",gender:"Male",height:"",weight:"",targetWeight:"",activity:"",goal:"",goalSpeed:0.5,blockers:[],habits:[],planningHabit:"",motivation:""});
   const goal=calcGoal(profile);
 
   const[onboarded,setOnboarded]=useState(()=>!!localStorage.getItem('bitelyze_onboarded'));
@@ -1852,7 +2088,16 @@ export default function App(){
     {screen==="s1"&&<StepBasic p={profile} setP={setProfile} onNext={()=>setScreen("s2")} onBack={()=>setScreen("welcome")}/>}
     {screen==="s2"&&<StepBody p={profile} setP={setProfile} onNext={()=>setScreen("s3")} onBack={()=>setScreen("s1")}/>}
     {screen==="s3"&&<StepActivity p={profile} setP={setProfile} onNext={()=>setScreen("s4")} onBack={()=>setScreen("s2")}/>}
-    {screen==="s4"&&<StepGoal p={profile} setP={setProfile} onNext={()=>setScreen("plan")} onBack={()=>setScreen("s3")}/>}
+    {screen==="s4"&&<StepGoal p={profile} setP={setProfile} onNext={()=>setScreen(profile.goal==="maintain"?"m2":"m1")} onBack={()=>setScreen("s3")}/>}
+    {screen==="m1"&&<Motivational1 onContinue={()=>setScreen("s5")}/>}
+    {screen==="s5"&&<StepGoalSpeed p={profile} setP={setProfile} onNext={()=>setScreen("m2")} onBack={()=>setScreen("m1")}/>}
+    {screen==="m2"&&<Motivational2 onContinue={()=>setScreen("s6")}/>}
+    {screen==="s6"&&<StepBlockers p={profile} setP={setProfile} onNext={()=>setScreen("s7")} onBack={()=>setScreen(profile.goal==="maintain"?"s4":"m2")}/>}
+    {screen==="s7"&&<StepHabits p={profile} setP={setProfile} onNext={()=>setScreen("s8")} onBack={()=>setScreen("s6")}/>}
+    {screen==="s8"&&<StepMealPlanning p={profile} setP={setProfile} onNext={()=>setScreen("s9")} onBack={()=>setScreen("s7")}/>}
+    {screen==="s9"&&<StepMotivation p={profile} setP={setProfile} onNext={()=>setScreen("compare")} onBack={()=>setScreen("s8")}/>}
+    {screen==="compare"&&<ComparisonSlide onContinue={()=>setScreen("m3")}/>}
+    {screen==="m3"&&<Motivational3 onContinue={()=>setScreen("plan")}/>}
     {screen==="plan"&&<PlanReady profile={profile} goal={goal} onStart={saveAndContinue}/>}
     {screen==="app"&&<TrackerApp profile={profile} goal={goal} uid={authUser.uid} onEditProfile={()=>setScreen("s1")} onSignOut={()=>signOut(auth)} theme={theme} toggleTheme={toggleTheme}/>}
   </div>);}
