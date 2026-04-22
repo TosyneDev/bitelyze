@@ -1026,17 +1026,19 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
       </div>
     </div>
 
-    {/* ── Frosted Tab Bar ── */}
-    <div style={{display:"flex",margin:"14px 16px 0",background:theme==="dark"?"rgba(14,14,24,0.85)":"rgba(245,245,248,0.9)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",borderRadius:16,padding:4,border:`1px solid ${T.border}`,position:"relative",boxShadow:theme==="dark"?"0 4px 20px rgba(0,0,0,0.3)":"0 4px 20px rgba(0,0,0,0.08)"}}>
-      {/* Sliding indicator */}
-      <div style={{position:"absolute",top:4,left:`calc(${activeTabIdx*25}% + 4px)`,width:"calc(25% - 4px)",height:"calc(100% - 8px)",background:`linear-gradient(135deg,${T.accent}18,${T.accent}08)`,borderRadius:12,transition:"left .3s cubic-bezier(0.16,1,0.3,1)",boxShadow:`0 0 12px ${T.accent}15,inset 0 1px 0 rgba(255,255,255,0.04)`,pointerEvents:"none"}}/>
-      {[["analyze",<Camera size={20}/>,"Analyze"],["log",<ClipboardList size={20}/>,"Log"],["progress",<BarChart3 size={20}/>,"Progress"],["me",<User size={20}/>,"Me"]].map(([k,ic,lb])=>(<button key={k} onClick={()=>setTab(k)} style={{flex:1,padding:"8px 4px",border:"none",background:"transparent",color:tab===k?T.accent:T.muted,fontWeight:700,cursor:"pointer",borderRadius:12,transition:"all .25s cubic-bezier(0.16,1,0.3,1)",fontFamily:"inherit",position:"relative",zIndex:1,opacity:tab===k?1:0.5,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-        <span style={{display:"inline-block"}}>{ic}</span>
-        <span style={{fontSize:10,fontWeight:700,color:tab===k?T.accent:T.muted}}>{lb}</span>
-      </button>))}
+    {/* ── Fixed Bottom Tab Bar ── */}
+    <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,background:theme==="dark"?"rgba(8,8,14,0.92)":"rgba(245,245,248,0.95)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:`1px solid ${T.border}`,padding:"6px 12px calc(6px + env(safe-area-inset-bottom))",boxShadow:theme==="dark"?"0 -4px 24px rgba(0,0,0,0.35)":"0 -4px 24px rgba(0,0,0,0.06)"}}>
+      <div style={{display:"flex",maxWidth:480,margin:"0 auto",position:"relative"}}>
+        {/* Sliding indicator */}
+        <div style={{position:"absolute",top:0,left:`calc(${activeTabIdx*25}% + 4px)`,width:"calc(25% - 8px)",height:"100%",background:`linear-gradient(135deg,${T.accent}18,${T.accent}08)`,borderRadius:12,transition:"left .3s cubic-bezier(0.16,1,0.3,1)",boxShadow:`0 0 12px ${T.accent}15,inset 0 1px 0 rgba(255,255,255,0.04)`,pointerEvents:"none"}}/>
+        {[["analyze",<Camera size={20}/>,"Analyze"],["log",<ClipboardList size={20}/>,"Log"],["progress",<BarChart3 size={20}/>,"Progress"],["me",<User size={20}/>,"Me"]].map(([k,ic,lb])=>(<button key={k} onClick={()=>setTab(k)} style={{flex:1,padding:"8px 4px",border:"none",background:"transparent",color:tab===k?T.accent:T.muted,fontWeight:700,cursor:"pointer",borderRadius:12,transition:"all .25s cubic-bezier(0.16,1,0.3,1)",fontFamily:"inherit",position:"relative",zIndex:1,opacity:tab===k?1:0.5,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+          <span style={{display:"inline-block"}}>{ic}</span>
+          <span style={{fontSize:10,fontWeight:700,color:tab===k?T.accent:T.muted}}>{lb}</span>
+        </button>))}
+      </div>
     </div>
 
-    <div style={{padding:"16px 16px 80px",maxWidth:480,margin:"0 auto"}}>
+    <div style={{padding:"16px 16px 120px",maxWidth:480,margin:"0 auto"}}>
       {tab==="analyze"&&(<>
         {pendingLogDate&&pendingLogDate!==todayYMD()&&(<div style={{background:`${T.orange}0a`,border:`1px solid ${T.orange}35`,borderRadius:12,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
           <Calendar size={16} color={T.orange}/>
