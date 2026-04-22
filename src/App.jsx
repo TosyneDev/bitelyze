@@ -695,8 +695,23 @@ function StepGoalSpeed({p,setP,onNext,onBack}){
   </div>);
 }
 
-function StepBlockers({p,setP,onNext,onBack}){
+// Small skip link shown top-right on optional steps
+const SkipLink=({onClick})=>(<button onClick={onClick} style={{position:"absolute",top:"calc(20px + env(safe-area-inset-top))",right:20,background:"none",border:"none",color:"#a0a0c0",fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:"inherit",padding:"4px 2px",textDecoration:"underline"}}>Skip for now</button>);
+
+// Bottom sheet shown when user first taps skip on step 6
+const SkipAllSheet=({onSkipAll,onKeepGoing})=>(<div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.65)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",display:"flex",alignItems:"flex-end",justifyContent:"center",animation:"fadeIn .25s ease"}} onClick={onKeepGoing}>
+  <div onClick={e=>e.stopPropagation()} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:"24px 24px 0 0",padding:"28px 22px calc(28px + env(safe-area-inset-bottom))",width:"100%",maxWidth:480,animation:"slideUp .35s cubic-bezier(0.34,1.56,0.64,1)"}}>
+    <div style={{width:60,height:60,borderRadius:18,background:`${T.accent}15`,border:`1px solid ${T.accent}30`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}><Zap size={28} color={T.accent}/></div>
+    <h2 style={{fontSize:20,fontWeight:900,color:T.text,textAlign:"center",marginBottom:8}}>Want the quick path?</h2>
+    <p style={{fontSize:13,color:T.muted,textAlign:"center",lineHeight:1.6,marginBottom:20}}>You can skip the remaining questions and go straight to your plan. You'll get less personalized coaching but can come back anytime to answer them in Settings → Profile.</p>
+    <button onClick={onSkipAll} style={{width:"100%",padding:"13px",borderRadius:12,border:`1.5px solid ${T.border}`,background:"transparent",color:T.text,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>Skip All Remaining</button>
+    <button onClick={onKeepGoing} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:T.accent,color:"#000",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Keep Going</button>
+  </div>
+</div>);
+
+function StepBlockers({p,setP,onNext,onBack,onSkipAll}){
   const opts=[{id:"consistency",icon:"📊",label:"Lack of consistency"},{id:"habits",icon:"🍔",label:"Unhealthy eating habits"},{id:"support",icon:"🤝",label:"Lack of support"},{id:"schedule",icon:"📅",label:"Busy schedule"},{id:"inspiration",icon:"🍳",label:"Lack of meal inspiration"},{id:"stress",icon:"😰",label:"Stress and emotional eating"},{id:"cost",icon:"💸",label:"Healthy food feels expensive"},{id:"start",icon:"🤷",label:"I don't know where to start"}];
+  const[showSheet,setShowSheet]=useState(false);
   const[err,setErr]=useState("");
   const selected=p.blockers||[];
   const toggle=(id)=>{
@@ -707,9 +722,10 @@ function StepBlockers({p,setP,onNext,onBack}){
       setP(x=>({...x,blockers:[...(x.blockers||[]),id]}));setErr("");
     }
   };
-  return(<div className="slideIn" style={{minHeight:"100vh",background:T.bg}}>
-    <div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`}}>
+  return(<div className="slideIn" style={{minHeight:"100vh",background:T.bg,position:"relative"}}>
+    <div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`,position:"relative"}}>
       <button onClick={onBack} style={{background:"none",border:"none",color:T.muted,fontSize:22,cursor:"pointer",marginBottom:14,display:"inline-flex",alignItems:"center"}}><ArrowLeft size={20}/></button>
+      <SkipLink onClick={()=>setShowSheet(true)}/>
       <ProgressDots total={9} current={5}/>
       <h2 style={{fontSize:22,fontWeight:800,marginBottom:4,color:T.text}}>What's stopping you from reaching your goals?</h2>
       <p style={{color:T.muted,fontSize:13}}>Step 6 of 9 — Select all that apply</p>
@@ -724,10 +740,11 @@ function StepBlockers({p,setP,onNext,onBack}){
       {err&&<p style={{fontSize:12,color:T.orange,marginBottom:10,textAlign:"center"}}>{err}</p>}
       <Btn onClick={onNext} disabled={selected.length===0} style={{marginTop:8}}><span style={{display:"inline-flex",alignItems:"center",gap:6}}>Continue <ArrowRight size={14}/></span></Btn>
     </div>
+    {showSheet&&<SkipAllSheet onKeepGoing={()=>setShowSheet(false)} onSkipAll={()=>{setP(x=>({...x,blockers:null,habits:null,planningHabit:null,motivation:null}));setShowSheet(false);if(onSkipAll)onSkipAll();}}/>}
   </div>);
 }
 
-function StepHabits({p,setP,onNext,onBack}){
+function StepHabits({p,setP,onNext,onBack,onSkip}){
   const rec=[["track_macros","Track macros"],["track_calories","Track calories"],["plan_meals","Plan more meals"]];
   const more=[["track_nutrients","Track nutrients"],["meal_prep","Meal prep and cook"],["eat_mindfully","Eat mindfully"],["balanced","Eat a balanced diet"],["whole_foods","Eat whole foods"],["more_protein","Eat more protein"],["more_fiber","Eat more fiber"],["more_vegs","Eat more vegetables"],["more_fruit","Eat more fruit"],["more_water","Drink more water"],["sleep","Prioritize sleep"],["move_more","Move more"],["workout","Workout more"]];
   useEffect(()=>{if((p.habits||[]).length===0&&p.goal){setP(x=>({...x,habits:["track_calories"]}));}},[]);
@@ -743,8 +760,9 @@ function StepHabits({p,setP,onNext,onBack}){
   };
   const Chip=({id,label})=>{const on=selected.includes(id);return(<button onClick={()=>toggle(id)} style={{padding:"9px 14px",borderRadius:99,border:`1px solid ${on?T.accent:T.border}`,background:on?T.accent:T.inputBg,color:on?"#000":T.muted,fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:6,transition:"all .18s"}}>{on&&<Check size={12}/>}{label}</button>);};
   return(<div className="slideIn" style={{minHeight:"100vh",background:T.bg}}>
-    <div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`}}>
+    <div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`,position:"relative"}}>
       <button onClick={onBack} style={{background:"none",border:"none",color:T.muted,fontSize:22,cursor:"pointer",marginBottom:14,display:"inline-flex",alignItems:"center"}}><ArrowLeft size={20}/></button>
+      <SkipLink onClick={()=>{setP(x=>({...x,habits:null}));if(onSkip)onSkip();}}/>
       <ProgressDots total={9} current={6}/>
       <h2 style={{fontSize:22,fontWeight:800,marginBottom:4,color:T.text}}>Which healthy habits matter most to you?</h2>
       <p style={{color:T.muted,fontSize:13}}>Step 7 of 9 — Select up to 3</p>
@@ -761,11 +779,12 @@ function StepHabits({p,setP,onNext,onBack}){
   </div>);
 }
 
-function StepMealPlanning({p,setP,onNext,onBack}){
+function StepMealPlanning({p,setP,onNext,onBack,onSkip}){
   const opts=[{id:"never",label:"Never"},{id:"rarely",label:"Rarely"},{id:"occasionally",label:"Occasionally"},{id:"frequently",label:"Frequently"},{id:"always",label:"Always"}];
   return(<div className="slideIn" style={{minHeight:"100vh",background:T.bg}}>
-    <div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`}}>
+    <div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`,position:"relative"}}>
       <button onClick={onBack} style={{background:"none",border:"none",color:T.muted,fontSize:22,cursor:"pointer",marginBottom:14,display:"inline-flex",alignItems:"center"}}><ArrowLeft size={20}/></button>
+      <SkipLink onClick={()=>{setP(x=>({...x,planningHabit:null}));if(onSkip)onSkip();}}/>
       <ProgressDots total={9} current={7}/>
       <h2 style={{fontSize:22,fontWeight:800,marginBottom:4,color:T.text}}>How often do you plan your meals in advance?</h2>
       <p style={{color:T.muted,fontSize:13}}>Step 8 of 9 — One answer</p>
@@ -780,11 +799,12 @@ function StepMealPlanning({p,setP,onNext,onBack}){
   </div>);
 }
 
-function StepMotivation({p,setP,onNext,onBack}){
+function StepMotivation({p,setP,onNext,onBack,onSkip}){
   const opts=[{id:"confidence",icon:"🌟",label:"Feel more confident in myself"},{id:"energy",icon:"⚡",label:"Have more energy and better mood"},{id:"clothes",icon:"👕",label:"Fit into clothes I love"},{id:"health",icon:"🏃",label:"Improve my physical health"},{id:"loved_ones",icon:"👨‍👩‍👧",label:"Be more present for loved ones"}];
   return(<div className="slideIn" style={{minHeight:"100vh",background:T.bg}}>
-    <div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`}}>
+    <div style={{padding:"calc(20px + env(safe-area-inset-top)) 22px 16px",background:T.stepBg,borderBottom:`1px solid ${T.border}`,position:"relative"}}>
       <button onClick={onBack} style={{background:"none",border:"none",color:T.muted,fontSize:22,cursor:"pointer",marginBottom:14,display:"inline-flex",alignItems:"center"}}><ArrowLeft size={20}/></button>
+      <SkipLink onClick={()=>{setP(x=>({...x,motivation:null}));if(onSkip)onSkip();}}/>
       <ProgressDots total={9} current={8}/>
       <h2 style={{fontSize:22,fontWeight:800,marginBottom:4,color:T.text}}>What would achieving your goal mean to you?</h2>
       <p style={{color:T.muted,fontSize:13}}>Step 9 of 9 — Select your top reason</p>
@@ -2092,10 +2112,10 @@ export default function App(){
     {screen==="m1"&&<Motivational1 onContinue={()=>setScreen("s5")}/>}
     {screen==="s5"&&<StepGoalSpeed p={profile} setP={setProfile} onNext={()=>setScreen("m2")} onBack={()=>setScreen("m1")}/>}
     {screen==="m2"&&<Motivational2 onContinue={()=>setScreen("s6")}/>}
-    {screen==="s6"&&<StepBlockers p={profile} setP={setProfile} onNext={()=>setScreen("s7")} onBack={()=>setScreen(profile.goal==="maintain"?"s4":"m2")}/>}
-    {screen==="s7"&&<StepHabits p={profile} setP={setProfile} onNext={()=>setScreen("s8")} onBack={()=>setScreen("s6")}/>}
-    {screen==="s8"&&<StepMealPlanning p={profile} setP={setProfile} onNext={()=>setScreen("s9")} onBack={()=>setScreen("s7")}/>}
-    {screen==="s9"&&<StepMotivation p={profile} setP={setProfile} onNext={()=>setScreen("compare")} onBack={()=>setScreen("s8")}/>}
+    {screen==="s6"&&<StepBlockers p={profile} setP={setProfile} onNext={()=>setScreen("s7")} onBack={()=>setScreen(profile.goal==="maintain"?"s4":"m2")} onSkipAll={()=>setScreen("compare")}/>}
+    {screen==="s7"&&<StepHabits p={profile} setP={setProfile} onNext={()=>setScreen("s8")} onBack={()=>setScreen("s6")} onSkip={()=>setScreen("s8")}/>}
+    {screen==="s8"&&<StepMealPlanning p={profile} setP={setProfile} onNext={()=>setScreen("s9")} onBack={()=>setScreen("s7")} onSkip={()=>setScreen("s9")}/>}
+    {screen==="s9"&&<StepMotivation p={profile} setP={setProfile} onNext={()=>setScreen("compare")} onBack={()=>setScreen("s8")} onSkip={()=>setScreen("compare")}/>}
     {screen==="compare"&&<ComparisonSlide onContinue={()=>setScreen("m3")}/>}
     {screen==="m3"&&<Motivational3 onContinue={()=>setScreen("plan")}/>}
     {screen==="plan"&&<PlanReady profile={profile} goal={goal} onStart={saveAndContinue}/>}
