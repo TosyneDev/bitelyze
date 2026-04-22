@@ -107,13 +107,20 @@ const saveProfile=async(uid,profile)=>{
   try{await setDoc(doc(db,"users",uid,"data","profile"),profile,{merge:true});}catch(e){console.log("Firestore save error:",e);}
 };
 const loadProfile=async(uid)=>{
-  // Try Firestore first with a 5s timeout, fall back to localStorage
+  // Try localStorage first (instant)
+  let local=null;
+  try{const raw=localStorage.getItem("profile_"+uid);if(raw)local=JSON.parse(raw);}catch(e){}
+  // Use longer Firestore timeout if localStorage is empty — this is likely a new browser
+  // for an existing user, so we MUST wait for Firestore to confirm their profile.
+  const timeoutMs=local?5000:15000;
   try{
-    const snap=await Promise.race([getDoc(doc(db,"users",uid,"data","profile")),new Promise((_,r)=>setTimeout(()=>r(new Error("timeout")),5000))]);
-    if(snap.exists()){const data=snap.data();try{localStorage.setItem("profile_"+uid,JSON.stringify(data));}catch(e){}return data;}
-  }catch(e){console.log("Firestore load failed, using localStorage:",e);}
-  try{const local=localStorage.getItem("profile_"+uid);if(local)return JSON.parse(local);}catch(e){}
-  return null;
+    const snap=await Promise.race([getDoc(doc(db,"users",uid,"data","profile")),new Promise((_,r)=>setTimeout(()=>r(new Error("timeout")),timeoutMs))]);
+    if(snap&&snap.exists()){const data=snap.data();try{localStorage.setItem("profile_"+uid,JSON.stringify(data));}catch(e){}return data;}
+    // Firestore returned but profile doesn't exist — genuinely new user
+    if(snap)return null;
+  }catch(e){console.log("Firestore profile load timed out:",e);}
+  // Firestore failed — return localStorage if we have it
+  return local;
 };
 const LS={get:(k)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
 
@@ -1630,6 +1637,7 @@ export default function App(){
   const toggleTheme=()=>{const next=theme==="dark"?"light":"dark";setTheme(next);localStorage.setItem("bitelyze_theme",next);T=THEMES[next];};
   const[authUser,setAuthUser]=useState(undefined);
   const[authResolved,setAuthResolved]=useState(false);
+  const[profileLoading,setProfileLoading]=useState(false);
   // Restore screen from localStorage or URL on mount
   const[screen,setScreen]=useState(()=>{
     const saved=localStorage.getItem('bitelyze_screen');
@@ -1655,9 +1663,11 @@ export default function App(){
   useEffect(()=>{const handler=()=>{const p=window.location.pathname;const s=routeMap[p];if(s==="app"&&authUser)setScreen("app");else if(s==="welcome"&&authUser)setScreen("welcome");};window.addEventListener("popstate",handler);return()=>window.removeEventListener("popstate",handler);},[authUser]);
 
   useEffect(()=>{const unsub=onAuthStateChanged(auth,async(user)=>{setAuthUser(user||null);if(user){
+    setProfileLoading(true);
     const saved=await loadProfile(user.uid);
     if(saved&&saved.height&&saved.weight&&saved.activity&&saved.goal){setProfile(p=>({...p,...saved}));setScreen("app");}
     else{if(saved&&saved.name)setProfile(p=>({...p,...saved}));else if(user.displayName)setProfile(p=>({...p,name:user.displayName}));setScreen("welcome");}
+    setProfileLoading(false);
   }else{
     const p=window.location.pathname;
     if(p==="/auth/login")setAuthInitialMode("login");
@@ -1672,7 +1682,7 @@ export default function App(){
   };
 
   if(!onboarded){navigate("/onboarding");return(<><style>{GS}</style><Onboarding onDone={(mode)=>{localStorage.setItem('bitelyze_onboarded','1');setAuthInitialMode(mode||"signup");setOnboarded(true);}}/></>);}
-  if(authUser===undefined)return(<div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><style>{GS}</style><div style={{width:48,height:48,borderRadius:14,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:"#000"}}><UtensilsCrossed size={24}/></div><div style={{width:32,height:32,border:`3px solid ${T.border}`,borderTop:`3px solid ${T.accent}`,borderRadius:"50%"}} className="spin"/></div>);
+  if(authUser===undefined||(authUser&&profileLoading))return(<div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><style>{GS}</style><div style={{width:48,height:48,borderRadius:14,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:"#000"}}><UtensilsCrossed size={24}/></div><div style={{width:32,height:32,border:`3px solid ${T.border}`,borderTop:`3px solid ${T.accent}`,borderRadius:"50%"}} className="spin"/><p style={{fontSize:12,color:T.muted,fontWeight:500}}>{profileLoading?"Loading your profile...":""}</p></div>);
   if(!authUser){navigate(authInitialMode==="login"?"/auth/login":"/auth/signup");return(<><style>{GS}</style><AuthScreen initialMode={authInitialMode}/></>);}
   return(<div style={{fontFamily:"'DM Sans',sans-serif"}}><style>{GS}</style>
     {screen==="welcome"&&<Welcome onNext={()=>setScreen("s1")}/>}
