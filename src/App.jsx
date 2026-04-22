@@ -110,16 +110,17 @@ const loadProfile=async(uid)=>{
   // Try localStorage first (instant)
   let local=null;
   try{const raw=localStorage.getItem("profile_"+uid);if(raw)local=JSON.parse(raw);}catch(e){}
-  // Use longer Firestore timeout if localStorage is empty — this is likely a new browser
-  // for an existing user, so we MUST wait for Firestore to confirm their profile.
-  const timeoutMs=local?5000:15000;
-  try{
-    const snap=await Promise.race([getDoc(doc(db,"users",uid,"data","profile")),new Promise((_,r)=>setTimeout(()=>r(new Error("timeout")),timeoutMs))]);
-    if(snap&&snap.exists()){const data=snap.data();try{localStorage.setItem("profile_"+uid,JSON.stringify(data));}catch(e){}return data;}
-    // Firestore returned but profile doesn't exist — genuinely new user
-    if(snap)return null;
-  }catch(e){console.log("Firestore profile load timed out:",e);}
-  // Firestore failed — return localStorage if we have it
+  // Retry Firestore up to 2 times with longer timeout for new browsers
+  const attempts=local?1:3;
+  const timeoutMs=local?5000:10000;
+  for(let i=0;i<attempts;i++){
+    try{
+      const snap=await Promise.race([getDoc(doc(db,"users",uid,"data","profile")),new Promise((_,r)=>setTimeout(()=>r(new Error("timeout")),timeoutMs))]);
+      if(snap&&typeof snap.exists==="function"&&snap.exists()){const data=snap.data();try{localStorage.setItem("profile_"+uid,JSON.stringify(data));}catch(e){}console.log("[loadProfile] Success from Firestore");return data;}
+      if(snap&&typeof snap.exists==="function"&&!snap.exists()){console.log("[loadProfile] Firestore has no profile — new account");return null;}
+    }catch(e){console.log(`[loadProfile] Attempt ${i+1}/${attempts} failed:`,e.message);}
+  }
+  if(local)console.log("[loadProfile] Using localStorage fallback");
   return local;
 };
 const LS={get:(k)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
@@ -1664,9 +1665,25 @@ export default function App(){
 
   useEffect(()=>{const unsub=onAuthStateChanged(auth,async(user)=>{setAuthUser(user||null);if(user){
     setProfileLoading(true);
+    // Check if this is a returning user (creation time differs from last sign-in)
+    const metadata=user.metadata||{};
+    const isReturningUser=metadata.creationTime&&metadata.lastSignInTime&&metadata.creationTime!==metadata.lastSignInTime;
     const saved=await loadProfile(user.uid);
-    if(saved&&saved.height&&saved.weight&&saved.activity&&saved.goal){setProfile(p=>({...p,...saved}));setScreen("app");}
-    else{if(saved&&saved.name)setProfile(p=>({...p,...saved}));else if(user.displayName)setProfile(p=>({...p,name:user.displayName}));setScreen("welcome");}
+    if(saved&&saved.height&&saved.weight&&saved.activity&&saved.goal){
+      // Full profile — go to dashboard
+      setProfile(p=>({...p,...saved}));setScreen("app");
+    } else if(isReturningUser){
+      // Returning user but profile incomplete/failed to load — still send to dashboard
+      // They can edit profile from Me tab if needed. Never dump returning users into setup.
+      if(saved)setProfile(p=>({...p,...saved}));else if(user.displayName)setProfile(p=>({...p,name:user.displayName}));
+      setScreen("app");
+      console.log("[auth] Returning user with incomplete profile — going to dashboard");
+    } else {
+      // Brand new account — send to setup
+      if(saved&&saved.name)setProfile(p=>({...p,...saved}));
+      else if(user.displayName)setProfile(p=>({...p,name:user.displayName}));
+      setScreen("welcome");
+    }
     setProfileLoading(false);
   }else{
     const p=window.location.pathname;
@@ -1676,8 +1693,8 @@ export default function App(){
     localStorage.removeItem('bitelyze_screen');
   }setAuthResolved(true);});return unsub;},[]);
 
-  const saveAndContinue=()=>{
-    if(authUser){saveProfile(authUser.uid,profile);}
+  const saveAndContinue=async()=>{
+    if(authUser){await saveProfile(authUser.uid,profile);}
     setScreen("app");
   };
 
