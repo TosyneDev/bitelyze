@@ -980,8 +980,8 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
       </div>
     </div>
 
-    {/* ── Calorie Ring Summary — 160px ── */}
-    <div style={{padding:"24px 18px 18px",background:T.bg}}>
+    {/* ── Calorie Ring Summary — only on Analyze tab ── */}
+    {tab==="analyze"&&(<div style={{padding:"24px 18px 18px",background:T.bg}}>
       <div style={{display:"flex",alignItems:"center",gap:20}}>
         <div style={{position:"relative",flexShrink:0}} className="ring-glow">
           <svg width="160" height="160" viewBox="0 0 160 160">
@@ -1010,10 +1010,10 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
         </div>
       </div>
       {/* saving indicator removed — saves silently */}
-    </div>
+    </div>)}
 
-    {/* ── Coach Card with swipeable tips ── */}
-    <div style={{margin:"0 16px",padding:"16px 18px",background:`linear-gradient(145deg,${cm.color}0a,${cm.color}05)`,border:`1px solid ${cm.color}25`,borderRadius:18,marginTop:12,boxShadow:`0 4px 24px ${cm.color}08`}}>
+    {/* ── Coach Card — only on Analyze tab ── */}
+    {tab==="analyze"&&(<div style={{margin:"0 16px",padding:"16px 18px",background:`linear-gradient(145deg,${cm.color}0a,${cm.color}05)`,border:`1px solid ${cm.color}25`,borderRadius:18,marginTop:12,boxShadow:`0 4px 24px ${cm.color}08`}}>
       <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:10}}>
         <div className="bob-float" style={{width:36,height:36,borderRadius:12,background:`${cm.color}18`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,border:`1px solid ${cm.color}25`}}><Brain size={18}/></div>
         <div><p style={{fontSize:10,fontWeight:700,color:cm.color,textTransform:"uppercase",letterSpacing:"1px",marginBottom:4}}>Your Coach</p><p style={{fontSize:13,color:T.text,lineHeight:1.6,fontWeight:500}}>{cm.msg}</p></div>
@@ -1024,7 +1024,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
       <div style={{display:"flex",justifyContent:"center",gap:5,marginTop:8}}>
         {coachTips.map((_,i)=>(<div key={i} style={{width:i===tipCardIdx?14:5,height:5,borderRadius:99,background:i===tipCardIdx?T.orange:T.border,transition:"all .3s"}}/>))}
       </div>
-    </div>
+    </div>)}
 
     <div style={{padding:"16px 16px 120px",maxWidth:480,margin:"0 auto"}}>
       {tab==="analyze"&&(<>
