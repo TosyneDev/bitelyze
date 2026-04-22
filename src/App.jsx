@@ -149,8 +149,24 @@ const addMealToHistory=async(uid,meal)=>{
   try{await setDoc(doc(db,"users",uid,"data","history"),{meals:arrayUnion(meal)},{merge:true});}catch(e){}
 };
 const loadHistory=async(uid)=>{
-  try{const snap=await Promise.race([getDoc(doc(db,"users",uid,"data","history")),new Promise((_,r)=>setTimeout(()=>r(),5000))]);if(snap.exists()){const m=snap.data().meals||[];LS.set(`history_${uid}`,m);return m;}}catch(e){}
-  return LS.get(`history_${uid}`)||[];
+  const local=LS.get(`history_${uid}`);
+  const hasLocal=Array.isArray(local)&&local.length>0;
+  // If no local data, this is likely a new browser for a returning user — retry harder
+  const attempts=hasLocal?1:3;
+  const timeoutMs=hasLocal?5000:10000;
+  for(let i=0;i<attempts;i++){
+    try{
+      const snap=await Promise.race([getDoc(doc(db,"users",uid,"data","history")),new Promise((_,r)=>setTimeout(()=>r(new Error("timeout")),timeoutMs))]);
+      if(snap&&typeof snap.exists==="function"&&snap.exists()){
+        const m=snap.data().meals||[];
+        LS.set(`history_${uid}`,m);
+        console.log(`[loadHistory] Loaded ${m.length} meals from Firestore`);
+        return m;
+      }
+      if(snap&&typeof snap.exists==="function"&&!snap.exists()){console.log("[loadHistory] No history in Firestore");return local||[];}
+    }catch(e){console.log(`[loadHistory] Attempt ${i+1}/${attempts} failed:`,e.message);}
+  }
+  return local||[];
 };
 
 const loadRecentDaysLocal=(uid,n=14)=>{
@@ -1652,6 +1668,21 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
         <Card><CardTitle icon={<User size={16} color={T.accent}/>}>My Profile</CardTitle>{[["Height",`${profile.height} cm`],["Weight",`${profile.weight} kg`],["Target Weight",profile.targetWeight?`${profile.targetWeight} kg`:"Not set"],["Daily Goal",`${goal} kcal`],["Activity",profile.activity?.replace("_"," ")],["Goal",profile.goal?.replace("_"," ")]].map(([k,v],i,a)=>(<div key={k} style={{display:"flex",justifyContent:"space-between",padding:"11px 0",borderBottom:i<a.length-1?`1px solid ${T.border}`:"none",fontSize:13}}><span style={{color:T.muted,fontWeight:500}}>{k}</span><span style={{fontWeight:700,color:T.blue,textTransform:"capitalize"}}>{v}</span></div>))}</Card>
         {/* Actions */}
         <button onClick={onEditProfile} className="ripple" style={{width:"100%",padding:"14px",borderRadius:14,border:`1px solid ${T.border}`,background:T.inputBg,color:T.text,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:14,marginBottom:10,transition:"all .2s",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.03)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Pencil size={14}/> Edit Profile</button>
+        <button onClick={async()=>{
+          setToast("Syncing from cloud...");
+          try{
+            const[prof,hist,days]=await Promise.all([
+              getDoc(doc(db,"users",uid,"data","profile")).catch(()=>null),
+              getDoc(doc(db,"users",uid,"data","history")).catch(()=>null),
+              loadRecentDays(uid,14).catch(()=>null)
+            ]);
+            let count=0;
+            if(prof&&prof.exists&&prof.exists()){const p=prof.data();LS.set(`profile_${uid}`,p);count++;}
+            if(hist&&hist.exists&&hist.exists()){const m=hist.data().meals||[];LS.set(`history_${uid}`,m);setAllHistory(m);count++;}
+            if(days){setRecentDays(days);count++;}
+            setToast(count>0?`✓ Synced ${count} item${count>1?"s":""} from cloud`:"Nothing new to sync");
+          }catch(e){setToast("Sync failed — check connection");}
+        }} className="ripple" style={{width:"100%",padding:"14px",borderRadius:14,border:`1px solid ${T.accent}30`,background:`${T.accent}10`,color:T.accent,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:14,marginBottom:10,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><RotateCcw size={14}/> Sync from Cloud</button>
         <button onClick={onSignOut} className="ripple" style={{width:"100%",padding:"14px",borderRadius:14,border:`1px solid ${T.danger}20`,background:`${T.danger}08`,color:T.danger,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:14,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><LogOut size={14}/> Sign Out</button>
       </>)}
     </div>
