@@ -8,7 +8,7 @@ import {
 import {
   initializeFirestore, doc, setDoc, getDoc, arrayUnion
 } from "firebase/firestore";
-import { Camera, ClipboardList, BarChart3, User, Flame, Target, Zap, UtensilsCrossed, Brain, Droplets, Trophy, Heart, ArrowLeft, ArrowRight, Upload, Search, Settings, LogOut, ChevronRight, ChevronLeft, Lock, Unlock, HelpCircle, Plus, Minus, X, Star, Activity, Scale, Ruler, Calendar, Sun, Moon, Check, ChevronUp, ChevronDown, RotateCcw, Trash2, Share2, Download, FlaskConical, Clock, Pencil, AlertTriangle, Info, Rocket, Dumbbell, Sprout, Sofa, Footprints, TrendingUp, TrendingDown } from "lucide-react";
+import { Camera, ClipboardList, BarChart3, User, Flame, Target, Zap, UtensilsCrossed, Brain, Droplets, Trophy, Heart, ArrowLeft, ArrowRight, Upload, Search, Settings, LogOut, ChevronRight, ChevronLeft, Lock, Unlock, HelpCircle, Plus, Minus, X, Star, Activity, Scale, Ruler, Calendar, Sun, Moon, Check, ChevronUp, ChevronDown, RotateCcw, Trash2, Share2, Download, FlaskConical, Clock, Pencil, AlertTriangle, Info, Rocket, Dumbbell, Sprout, Sofa, Footprints, TrendingUp, TrendingDown, Lightbulb, Sparkles, Stethoscope, Repeat } from "lucide-react";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBdin15LOt0vwN3H1EXAnFox2Zyjek5J4Y",
@@ -528,8 +528,6 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
   const[result,setResult]=useState(null);
   const[error,setError]=useState(null);
   const[textFood,setTextFood]=useState("");
-  const[consumed,setConsumed]=useState(0);
-  const[mealLog,setMealLog]=useState([]);
   const[allHistory,setAllHistory]=useState([]);
   const[remaining,setRemaining]=useState(()=>getRemainingAnalyses(uid));
   const[waterByDate,setWaterByDate]=useState({});
@@ -547,6 +545,18 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
   const today=todayYMD();
   const water=waterByDate[today]||0;
   const setWater=(v)=>{setWaterByDate(prev=>{const newVal=typeof v==="function"?v(prev[today]||0):v;return{...prev,[today]:newVal};});};
+  // Derive consumed and mealLog from allHistory (filtered to today) — single source of truth
+  const mealLog=useMemo(()=>{
+    return allHistory.filter(m=>{
+      const d=m.date||(m.timestamp?new Date(m.timestamp).toISOString().slice(0,10):today);
+      return d===today;
+    }).sort((a,b)=>{
+      const ta=a.timestamp?new Date(a.timestamp).getTime():0;
+      const tb=b.timestamp?new Date(b.timestamp).getTime():0;
+      return ta-tb;
+    });
+  },[allHistory,today]);
+  const consumed=useMemo(()=>mealLog.reduce((s,m)=>s+(Number(m.totalCalories)||0),0),[mealLog]);
   const[saving,setSaving]=useState(false);
   const[recentDays,setRecentDays]=useState({});
   const[toast,setToast]=useState(null);
@@ -641,7 +651,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
   useEffect(()=>{if(!uid)return;(async()=>{const[todayData,history,savedStats,days]=await Promise.all([loadTodayData(uid),loadHistory(uid),loadStats(uid),loadRecentDays(uid,14)]);
     // Seed waterByDate: start with today's water, then pull from loaded day data
     const waterMap={};
-    if(todayData){setConsumed(todayData.consumed||0);setMealLog(todayData.meals||[]);waterMap[todayYMD()]=todayData.water||0;}
+    if(todayData){waterMap[todayYMD()]=todayData.water||0;}
     if(days){Object.entries(days).forEach(([k,v])=>{if(v&&typeof v.water==="number")waterMap[k]=v.water;});}
     setWaterByDate(waterMap);
     // Migrate history entries missing `date`
@@ -673,10 +683,6 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
   const deleteMeal=async(entry)=>{
     if(!entry)return;
     setAllHistory(h=>h.filter(m=>m.id!==entry.id));
-    if((entry.date||todayYMD())===todayYMD()){
-      setConsumed(c=>Math.max(0,c-(entry.totalCalories||0)));
-      setMealLog(l=>l.filter(m=>m.id!==entry.id));
-    }
     // Persist history to Firestore: rewrite the whole array
     if(uid){
       try{
@@ -768,14 +774,14 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
   // Insights
   const insights=(()=>{
     const out=[];
-    if(highestDay){const dt=parseYMD(highestDay.date);out.push({icon:"📈",text:`Your highest day was ${dt.toLocaleDateString("en",{weekday:"long"})} (${highestDay.calories} kcal)`});}
+    if(highestDay){const dt=parseYMD(highestDay.date);out.push({icon:<TrendingUp size={16} color={T.accent}/>,text:`Your highest day was ${dt.toLocaleDateString("en",{weekday:"long"})} (${highestDay.calories} kcal)`});}
     const underCount=dailyArr.filter(d=>d.hasData&&d.calories<=goal).length;
-    if(daysWithData>0)out.push({icon:"🎯",text:`You stayed under goal ${underCount} out of ${daysWithData} days`});
+    if(daysWithData>0)out.push({icon:<Target size={16} color={T.orange}/>,text:`You stayed under goal ${underCount} out of ${daysWithData} days`});
     if(daysWithData>0){
       const proteinTarget=Math.round(goal*0.3/4);// per day
       const avgProtein=Math.round(totalProtein/daysWithData);
       const pct=proteinTarget>0?Math.round((avgProtein/proteinTarget)*100):100;
-      if(pct<85)out.push({icon:"💪",text:`Your protein is ${100-pct}% below your target`});
+      if(pct<85)out.push({icon:<Dumbbell size={16} color={T.blue}/>,text:`Your protein is ${100-pct}% below your target`});
     }
     if(weekdayAvg){
       const wk=weekdayAvg.filter(d=>d.hasData&&d.idx>=1&&d.idx<=5).map(d=>d.avg);
@@ -784,14 +790,14 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
         const wkAvg=wk.reduce((a,b)=>a+b,0)/wk.length;
         const weAvg=we.reduce((a,b)=>a+b,0)/we.length;
         const diff=Math.round(weAvg-wkAvg);
-        if(Math.abs(diff)>wkAvg*0.1)out.push({icon:"📅",text:`Weekends average ${Math.abs(diff)} kcal ${diff>0?"higher":"lower"} than weekdays`});
+        if(Math.abs(diff)>wkAvg*0.1)out.push({icon:<Calendar size={16} color={T.purple}/>,text:`Weekends average ${Math.abs(diff)} kcal ${diff>0?"higher":"lower"} than weekdays`});
       }
     }
-    if(stats.streak>=7)out.push({icon:"🔥",text:`You've logged consistently for ${stats.streak} days straight`});
+    if(stats.streak>=7)out.push({icon:<Flame size={16} color={T.orange}/>,text:`You've logged consistently for ${stats.streak} days straight`});
     if(daysWithData>0){
       const scores=rangeMeals.map(m=>m.healthScore||5);
       const avgScore=(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1);
-      out.push({icon:"✨",text:`Your average health score is ${avgScore}/10`});
+      out.push({icon:<Sparkles size={16} color={T.accent}/>,text:`Your average health score is ${avgScore}/10`});
     }
     return out.slice(0,4);
   })();
@@ -868,11 +874,6 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
       healthScore:m.healthScore||5,
       items:m.items||[]
     };
-    // Only affect today's consumed/mealLog if the entry is actually today
-    if(dateStr===todayYMD()){
-      setConsumed(c=>c+m.totalCalories);
-      setMealLog(l=>[...l,entry]);
-    }
     setAllHistory(h=>[...h,entry]);
     if(uid)await addMealToHistory(uid,entry);
     if(pendingLogDate&&pendingLogDate!==todayYMD()){
@@ -888,8 +889,25 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
 
   const coachMsg=()=>{const pct=Math.round((consumed/goal)*100);if(consumed===0)return{msg:coachGreeting(profile.name),color:T.accent};if(pct<50)return{msg:`You've had ${consumed} kcal so far. ${goal-consumed} more to go today.`,color:T.blue};if(pct<90)return{msg:`Almost at your goal! Just ${goal-consumed} kcal left. Keep it up! 💪`,color:T.orange};if(pct<=105)return{msg:`Goal reached! Great discipline today, ${profile.name}. 🌙`,color:T.accent};return{msg:`You're ${consumed-goal} kcal over today. Go easy on the next meal.`,color:T.danger};};
   const cm=coachMsg();
-  const earned=BADGES.filter(b=>b.check(stats));
-  const locked=BADGES.filter(b=>!b.check(stats));
+  // Live badge stats — derived from real data so badges unlock immediately
+  const liveBadgeStats=useMemo(()=>{
+    const daysUnderGoal=Object.values(recentDays||{}).filter(d=>d&&d.consumed>0&&d.consumed<=goal).length;
+    const waterGoalHits=Object.values(waterByDate).filter(w=>w>=8).length;
+    const earlyBreakfast=allHistory.filter(m=>{
+      if(!m.timestamp)return false;
+      const h=new Date(m.timestamp).getHours();
+      return h<9;
+    }).length;
+    return {
+      totalMeals:allHistory.length,
+      streak:stats.streak||0,
+      waterGoalHits:Math.max(waterGoalHits,stats.waterGoalHits||0),
+      daysUnderGoal:Math.max(daysUnderGoal,stats.daysUnderGoal||0),
+      earlyBreakfast:Math.max(earlyBreakfast,stats.earlyBreakfast||0)
+    };
+  },[allHistory,waterByDate,recentDays,goal,stats]);
+  const earned=BADGES.filter(b=>b.check(liveBadgeStats));
+  const locked=BADGES.filter(b=>!b.check(liveBadgeStats));
 
   const pct=Math.round(Math.min((consumed/goal)*100,100));
   const ringR=70;const ringC=2*Math.PI*ringR;
@@ -1149,7 +1167,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
           {/* Section 4 — Meal Verdict */}
           <Card style={{borderLeft:`3px solid ${hc}`,padding:"16px 18px"}}>
             <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
-              <span style={{fontSize:22,flexShrink:0}}>🧑‍⚕️</span>
+              <span style={{flexShrink:0,display:"flex",alignItems:"center"}}><Stethoscope size={20} color={hc}/></span>
               <div>
                 <p style={{fontSize:11,fontWeight:700,color:hc,textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>Meal Verdict</p>
                 <p style={{fontSize:13,color:T.text,lineHeight:1.65,fontWeight:500}}>{verdictText}</p>
@@ -1159,7 +1177,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
 
           {/* Section 5 — Coach Suggestions */}
           {result.suggestions&&result.suggestions.length>0&&(<Card>
-            <CardTitle icon="💡">Coach Suggestions</CardTitle>
+            <CardTitle icon={<Lightbulb size={16} color={T.accent}/>}>Coach Suggestions</CardTitle>
             {result.suggestions.slice(0,4).map((s,i)=>(<div key={i} style={{display:"flex",gap:10,padding:"10px 0",borderBottom:i<Math.min(result.suggestions.length,4)-1?`1px solid ${T.border}`:"none",animation:`staggerIn .4s ease ${i*0.1}s both`}}>
               <span style={{fontSize:17,flexShrink:0}}>{s.icon}</span>
               <span style={{fontSize:13,lineHeight:1.6,color:"#c8c8e0"}}>{s.text}</span>
@@ -1168,7 +1186,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
 
           {/* Section 6 — Smarter Swaps (replaces Burn It Off) */}
           {result.smarterSwaps&&result.smarterSwaps.length>0&&(<Card>
-            <CardTitle icon="🔄">Smarter Swaps</CardTitle>
+            <CardTitle icon={<Repeat size={16} color={T.accent}/>}>Smarter Swaps</CardTitle>
             {result.smarterSwaps.map((sw,i)=>(<div key={i} style={{padding:"12px 0",borderBottom:i<result.smarterSwaps.length-1?`1px solid ${T.border}`:"none",animation:`staggerIn .4s ease ${i*0.12}s both`}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
                 <span style={{fontSize:13,fontWeight:700,color:T.danger,opacity:0.85,textDecoration:"line-through"}}>{sw.from}</span>
@@ -1454,9 +1472,9 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
 
           {/* Section 6: Insights */}
           {insights.length>0&&(<Card>
-            <CardTitle icon="💡">Insights</CardTitle>
-            {insights.map((ins,i)=>(<div key={i} style={{display:"flex",gap:10,padding:"10px 0",borderBottom:i<insights.length-1?`1px solid ${T.border}`:"none",animation:`staggerIn .4s ease ${i*0.08}s both`}}>
-              <span style={{fontSize:15,flexShrink:0}}>{ins.icon}</span>
+            <CardTitle icon={<Lightbulb size={16} color={T.accent}/>}>Insights</CardTitle>
+            {insights.map((ins,i)=>(<div key={i} style={{display:"flex",gap:10,padding:"10px 0",borderBottom:i<insights.length-1?`1px solid ${T.border}`:"none",animation:`staggerIn .4s ease ${i*0.08}s both`,alignItems:"center"}}>
+              <span style={{flexShrink:0,display:"flex",alignItems:"center"}}>{ins.icon}</span>
               <span style={{fontSize:13,lineHeight:1.55,color:T.text,fontWeight:500}}>{ins.text}</span>
             </div>))}
           </Card>)}
