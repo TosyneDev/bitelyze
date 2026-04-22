@@ -603,8 +603,39 @@ function StepGoal({p,setP,onNext,onBack}){const goals=[{k:"lose_fast",l:"Lose We
 
 function PlanReady({profile,goal,onStart}){const p=profile||{};const w=parseFloat(p.weight)||0,h=parseFloat(p.height)||0,a=parseFloat(p.age)||0;const acts={sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very_active:1.9};const bmr=w&&h&&a?Math.round(p.gender==="Male"?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161):0;const tdee=Math.round(bmr*(acts[p.activity]||1.375));const bmi=h>0?(w/((h/100)**2)).toFixed(1):0;const bi=bmi<18.5?["Underweight",T.blue]:bmi<25?["Healthy",T.accent]:bmi<30?["Overweight",T.orange]:["Obese",T.danger];return(<div className="fadeIn" style={{minHeight:"100vh",background:T.bg,backgroundImage:`radial-gradient(ellipse at 50% 10%, #00e5a010 0%, transparent 58%)`,paddingBottom:48}}><div style={{padding:"36px 22px 22px",textAlign:"center"}}><div className="pop" style={{width:76,height:76,borderRadius:22,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:38,margin:"0 auto 18px",boxShadow:`0 0 40px ${T.accentGlow}`,color:"#000"}}><Target size={38}/></div><h2 style={{fontSize:26,fontWeight:900,marginBottom:7,color:T.text}}>Your Plan is Ready,<br/><span style={{color:T.accent}}>{p.name}!</span></h2><p style={{color:T.muted,fontSize:13}}>Here are your personalised targets</p></div><div style={{padding:"0 18px",maxWidth:480,margin:"0 auto"}}><div style={{background:`${T.accent}08`,border:`1.5px solid ${T.accent}45`,borderRadius:20,padding:"26px 20px",marginBottom:13,textAlign:"center"}}><p style={{fontSize:11,color:T.muted,textTransform:"uppercase",letterSpacing:"1.2px",marginBottom:9}}>Daily Calorie Goal</p><p style={{fontSize:64,fontWeight:900,color:T.accent,lineHeight:1}}>{goal}</p><p style={{fontSize:13,color:T.muted,marginTop:5}}>kcal per day</p></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:13}}>{[["BMR",`${bmr} kcal`,"Calories at rest",T.blue],["TDEE",`${tdee} kcal`,"Maintenance",T.orange],["BMI",bi[0],`${bmi} kg/m²`,bi[1]],["Target",p.targetWeight?`${p.targetWeight} kg`:"—","Goal weight",T.accent]].map(([l,v,s,c])=>(<div key={l} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"13px 15px"}}><p style={{fontSize:10,color:T.muted,textTransform:"uppercase",letterSpacing:".6px",marginBottom:5}}>{l}</p><p style={{fontSize:16,fontWeight:800,color:c,marginBottom:3}}>{v}</p><p style={{fontSize:11,color:T.muted}}>{s}</p></div>))}</div><Card><CardTitle icon={<FlaskConical size={16} color={T.accent}/>}>Recommended Daily Macros</CardTitle><MacroBar label={`Protein — ${Math.round(goal*.3/4)}g`} val={Math.round(goal*.3/4)} max={200} color={T.blue}/><MacroBar label={`Carbs — ${Math.round(goal*.45/4)}g`} val={Math.round(goal*.45/4)} max={350} color={T.orange}/><MacroBar label={`Fat — ${Math.round(goal*.25/9)}g`} val={Math.round(goal*.25/9)} max={100} color="#ff6b9d"/></Card><Btn onClick={onStart} style={{fontSize:16,padding:"15px"}}><span style={{display:"inline-flex",alignItems:"center",gap:8}}><Rocket size={16}/> Start Tracking</span></Btn></div></div>);}
 
+function DashboardTour({name,onDone}){
+  const[step,setStep]=useState(0);
+  const steps=[
+    {icon:<UtensilsCrossed size={32} color={T.accent}/>,title:`Welcome${name?`, ${name}`:""}!`,desc:"Here's a quick 30-second tour of Bitelyze. Let's get you started."},
+    {icon:<Camera size={32} color={T.accent}/>,title:"Analyze any meal",desc:"Snap a photo or type your food. We'll give you instant calories, macros and a health score in under 3 seconds."},
+    {icon:<ClipboardList size={32} color={T.accent}/>,title:"Log your day",desc:"Every meal is saved with a timestamp. Switch dates in the Log tab to view or add meals from any day."},
+    {icon:<BarChart3 size={32} color={T.accent}/>,title:"See your progress",desc:"The Progress tab shows streaks, trends, macros and patterns across any time range you pick."},
+    {icon:<Sparkles size={32} color={T.accent}/>,title:"You're all set",desc:"Tap Analyze below to log your first meal. You can revisit this from the Me tab anytime."}
+  ];
+  const current=steps[step];
+  const last=step===steps.length-1;
+  return(<div style={{position:"fixed",inset:0,zIndex:10000,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",padding:"22px",animation:"fadeIn .3s ease"}}>
+    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:22,padding:"28px 24px 22px",maxWidth:360,width:"100%",textAlign:"center",boxShadow:`0 20px 60px rgba(0,0,0,0.4), 0 0 80px ${T.accent}12`,animation:"pop .4s ease"}}>
+      <div style={{width:72,height:72,borderRadius:20,background:`${T.accent}15`,border:`1px solid ${T.accent}30`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px",boxShadow:`0 0 40px ${T.accent}20`}}>{current.icon}</div>
+      <h2 style={{fontSize:22,fontWeight:900,color:T.text,marginBottom:10,letterSpacing:"-0.01em"}}>{current.title}</h2>
+      <p style={{fontSize:14,color:T.muted,lineHeight:1.6,marginBottom:22}}>{current.desc}</p>
+      {/* Dots */}
+      <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:20}}>
+        {steps.map((_,i)=>(<div key={i} style={{width:i===step?22:7,height:7,borderRadius:99,background:i===step?T.accent:T.border,transition:"all .3s"}}/>))}
+      </div>
+      {/* Buttons */}
+      <div style={{display:"flex",gap:10}}>
+        {step>0&&<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"12px",borderRadius:12,border:`1px solid ${T.border}`,background:"transparent",color:T.muted,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Back</button>}
+        {!last&&step===0&&<button onClick={onDone} style={{flex:1,padding:"12px",borderRadius:12,border:`1px solid ${T.border}`,background:"transparent",color:T.muted,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Skip</button>}
+        <button onClick={()=>last?onDone():setStep(s=>s+1)} style={{flex:step===0?1.5:1,padding:"12px",borderRadius:12,border:"none",background:T.accent,color:"#000",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6}}>{last?"Got it!":"Next"} {!last&&<ArrowRight size={14}/>}</button>
+      </div>
+    </div>
+  </div>);
+}
+
 function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}){
   const[tab,setTab]=useState("analyze");
+  const[showTour,setShowTour]=useState(()=>{try{return!localStorage.getItem(`bitelyze_tour_v1_${uid}`);}catch(e){return false;}});
   const[image,setImage]=useState(null);
   const[imgB64,setImgB64]=useState(null);
   const[loading,setLoading]=useState(false);
@@ -1028,6 +1059,9 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
   const remainingAfter=result?(goal-consumed-result.totalCalories):0;
 
   return(<div style={{minHeight:"100vh",background:T.bg,fontFamily:"'DM Sans',sans-serif",color:T.text,transition:"background .3s ease, color .3s ease"}}>
+    {/* ── Product Tour (shown only once) ── */}
+    {showTour&&<DashboardTour name={profile.name} onDone={()=>{try{localStorage.setItem(`bitelyze_tour_v1_${uid}`,"1");}catch(e){}setShowTour(false);}}/>}
+
     {/* ── Toast Notification ── */}
     {toast&&(<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:`linear-gradient(135deg,${T.accent},#00b87a)`,color:"#000",padding:"12px 24px",borderRadius:16,fontSize:14,fontWeight:700,zIndex:9999,animation:"slideUp .3s ease forwards",boxShadow:`0 8px 32px ${T.accentGlow}`,maxWidth:"90%",textAlign:"center"}}>{toast}</div>)}
 
@@ -1666,6 +1700,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
         <Card><CardTitle icon={<User size={16} color={T.accent}/>}>My Profile</CardTitle>{[["Height",`${profile.height} cm`],["Weight",`${profile.weight} kg`],["Target Weight",profile.targetWeight?`${profile.targetWeight} kg`:"Not set"],["Daily Goal",`${goal} kcal`],["Activity",profile.activity?.replace("_"," ")],["Goal",profile.goal?.replace("_"," ")]].map(([k,v],i,a)=>(<div key={k} style={{display:"flex",justifyContent:"space-between",padding:"11px 0",borderBottom:i<a.length-1?`1px solid ${T.border}`:"none",fontSize:13}}><span style={{color:T.muted,fontWeight:500}}>{k}</span><span style={{fontWeight:700,color:T.blue,textTransform:"capitalize"}}>{v}</span></div>))}</Card>
         {/* Actions */}
         <button onClick={onEditProfile} className="ripple" style={{width:"100%",padding:"14px",borderRadius:14,border:`1px solid ${T.border}`,background:T.inputBg,color:T.text,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:14,marginBottom:10,transition:"all .2s",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.03)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Pencil size={14}/> Edit Profile</button>
+        <button onClick={()=>setShowTour(true)} className="ripple" style={{width:"100%",padding:"14px",borderRadius:14,border:`1px solid ${T.border}`,background:T.inputBg,color:T.text,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:14,marginBottom:10,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><HelpCircle size={14}/> View Tour Again</button>
         <button onClick={async()=>{
           setToast("Syncing from cloud...");
           try{
