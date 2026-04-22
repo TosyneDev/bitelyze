@@ -69,7 +69,20 @@ async function identifyFoodFromImage(content, apiKey) {
   try {
     const identifyPrompt = [...content.filter(c => c.type === "image"), {
       type: "text",
-      text: 'What food items are in this image? Return ONLY a simple comma-separated list of food names (e.g. "grilled chicken breast, white rice, steamed broccoli"). No other text.'
+      text: `Identify EVERY food and drink in this image with maximum specificity. Apply this priority order:
+
+1. RECOGNIZE BRANDS / RESTAURANTS first if visible (e.g. "Big Mac", "Chick-fil-A sandwich", "Starbucks Frappuccino")
+2. RECOGNIZE REGIONAL DISHES by their proper name (e.g. "jollof rice with chicken", "pad thai", "chicken tikka masala", "fufu and egusi soup", "ramen tonkotsu")
+3. For generic items, include cooking method + key descriptors (e.g. "pan-fried chicken thigh with skin", "white basmati rice", "steamed broccoli florets")
+
+For each item, also note approximate portion if visible (e.g. "2 slices", "1 cup", "8 oz").
+
+Return ONLY a comma-separated list. NO other text, no markdown.
+
+Examples:
+- "Big Mac, large fries, medium Coke"
+- "jollof rice (1.5 cups), grilled chicken thigh, fried plantains (4 slices)"
+- "chicken caesar salad with parmesan and croutons, garlic bread (2 slices)"`
     }];
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -80,8 +93,8 @@ async function identifyFoodFromImage(content, apiKey) {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 200,
+        model: "claude-sonnet-4-6",
+        max_tokens: 300,
         messages: [{ role: "user", content: identifyPrompt }],
       }),
     });
@@ -129,8 +142,9 @@ export default async function handler(req, res) {
 
     // Step 2: Search USDA for real nutritional data
     if (foodQuery) {
-      // Search for each food item separately if comma-separated
-      const foods = foodQuery.split(",").map(f => f.trim()).filter(Boolean);
+      // Clean queries — remove portion text in parens to improve USDA hit rate
+      const cleanFood = (s) => s.replace(/\([^)]*\)/g, "").replace(/\d+\s*(slices?|cups?|oz|g|ml|pieces?|tbsp|tsp)/gi, "").trim();
+      const foods = foodQuery.split(",").map(f => cleanFood(f)).filter(Boolean);
       const allResults = [];
       for (const food of foods.slice(0, 5)) {
         const results = await searchUSDA(food);
@@ -159,11 +173,20 @@ export default async function handler(req, res) {
 
 Your task is to analyze the food with MAXIMUM precision and deliver calorie and nutrition data that a user can trust to make health decisions.
 
-━━━ STEP 1: FOOD IDENTIFICATION ━━━
-- Identify EVERY individual food item
-- Do NOT group items unless they are clearly one composite dish
-- Name each item using its most specific common name
-- If you recognize a regional dish, name it specifically
+━━━ STEP 1: FOOD IDENTIFICATION (CRITICAL — ACCURACY STARTS HERE) ━━━
+Apply this priority order:
+1. RECOGNIZE BRANDS / RESTAURANT ITEMS first (Big Mac = 563 kcal, NOT "burger ~400 kcal"). Brand recognition = exact calories.
+2. RECOGNIZE REGIONAL DISHES by their proper name (jollof rice, pad thai, tikka masala, fufu, ramen, biryani, paella, suya, amala, egusi soup, injera). These have known recipe profiles.
+3. For generic items, identify the SPECIFIC variant (white rice vs brown rice, chicken breast vs thigh, whole milk vs skim).
+
+Common identification mistakes to AVOID:
+- "Rice" — must specify white/brown/jasmine/basmati/jollof/fried (calorie diff up to 50%)
+- "Chicken" — breast vs thigh vs wing vs fried vs grilled (calorie diff up to 3x)
+- "Sandwich" — must identify type (turkey club, BLT, grilled cheese)
+- "Pasta" — must specify with sauce (carbonara has cream/cheese, marinara is light)
+- "Salad" — dressing matters more than greens (caesar +200kcal, vinaigrette +80kcal)
+
+If you see multiple items, list them ALL separately. Do not collapse "burger and fries" into one item.
 
 ━━━ STEP 2: PORTION ESTIMATION ━━━
 Estimate portion size using visual cues: plate/utensil/hand size, bowl/cup size, thickness, number of pieces, cultural context.
@@ -243,8 +266,9 @@ ${JSON.stringify(usdaData, null, 2)}` : "";
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1500,
+        model: "claude-sonnet-4-6",
+        max_tokens: 2500,
+        temperature: 0.3,
         messages: [{ role: "user", content: enhancedContent }],
       }),
     });
