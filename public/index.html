@@ -20,14 +20,84 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
 
+    <!-- Perf: preconnect to third parties -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+    <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com" />
+    <link rel="dns-prefetch" href="https://securetoken.googleapis.com" />
+    <link rel="dns-prefetch" href="https://api.anthropic.com" />
+
+    <!-- Preload critical font weights only -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;700;900&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;700;900&display=swap" />
+
     <!-- Open Graph / Social -->
     <meta property="og:title" content="Bitelyze — Smart Nutrition Tracking" />
     <meta property="og:description" content="Snap your meal. Get instant calories, macros and personalized coaching." />
     <meta property="og:image" content="/logo.svg" />
     <meta property="og:type" content="website" />
+
+    <style>
+      html, body { margin: 0; padding: 0; height: 100%; background: #08080e; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif; }
+      #root { min-height: 100vh; }
+      /* Static loading screen — shown before React mounts */
+      #initial-loader {
+        position: fixed; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 20px;
+        background: #08080e; z-index: 9999;
+        animation: fadeOut 0.3s ease 0.05s forwards;
+        animation-play-state: paused;
+      }
+      #initial-loader.hide { animation-play-state: running; }
+      .init-logo {
+        width: 72px; height: 72px; border-radius: 20px;
+        background: linear-gradient(135deg, #00e5a0, #00b87a);
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 0 48px rgba(0,229,160,0.35);
+        animation: initPulse 1.6s ease-in-out infinite;
+      }
+      .init-spinner {
+        width: 28px; height: 28px; border: 3px solid #1c1c2a;
+        border-top-color: #00e5a0; border-radius: 50%;
+        animation: initSpin 0.9s linear infinite;
+      }
+      @keyframes initSpin { to { transform: rotate(360deg); } }
+      @keyframes initPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.04);} }
+      @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+    </style>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="initial-loader">
+      <div class="init-logo">
+        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/>
+          <path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/>
+          <path d="m2.1 21.8 6.4-6.3"/>
+          <path d="m19 5-7 7"/>
+        </svg>
+      </div>
+      <div class="init-spinner"></div>
+    </div>
     <div id="root"></div>
+    <script>
+      // Hide the initial loader once React has rendered something into #root
+      (function() {
+        var loader = document.getElementById('initial-loader');
+        if (!loader) return;
+        var observer = new MutationObserver(function() {
+          var root = document.getElementById('root');
+          if (root && root.children.length > 0) {
+            loader.classList.add('hide');
+            setTimeout(function() { if (loader.parentNode) loader.parentNode.removeChild(loader); }, 400);
+            observer.disconnect();
+          }
+        });
+        observer.observe(document.getElementById('root'), { childList: true });
+        // Safety: hide after 10s no matter what
+        setTimeout(function() { loader.classList.add('hide'); setTimeout(function() { if (loader.parentNode) loader.parentNode.removeChild(loader); }, 400); }, 10000);
+      })();
+    </script>
   </body>
 </html>
