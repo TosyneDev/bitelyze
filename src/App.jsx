@@ -122,6 +122,123 @@ const getRemainingAnalyses=(uid)=>{if(isDevUser())return 999;return Math.max(0,D
 const HOUR=new Date().getHours();
 const coachGreeting=(name)=>{if(HOUR<12)return`Good morning, ${name}! 🌅 Breakfast sets the tone.`;if(HOUR<17)return`Hey ${name}! 🌤️ Midday check-in — how's your eating going?`;return`Evening, ${name}! 🌙 Almost done for the day.`;};
 const coachTips=["💡 Eating slowly helps your brain register fullness — aim for 20 mins per meal.","💡 Protein at breakfast reduces cravings by up to 60% throughout the day.","💡 Drinking water before meals can reduce calorie intake by ~13%.","💡 Your body burns more calories digesting protein than carbs or fat.","💡 Sleep affects hunger hormones — aim for 7–8 hours for best results.","💡 Eating from smaller plates naturally reduces portion sizes."];
+
+// ── Smart Coach — pattern detection from real user data ──
+const computeSmartCoach=({allHistory,recentDays,goal,profile,consumed,todayMeals})=>{
+  const insights=[];
+  const dayNames=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const now=new Date();
+  const hour=now.getHours();
+  const proteinTarget=Math.round(goal*0.3/4);// ~30% of calories from protein
+
+  // Group history by YYYY-MM-DD (local)
+  const byDate={};
+  (allHistory||[]).forEach(m=>{
+    const d=m.date||(m.timestamp?new Date(m.timestamp).toISOString().slice(0,10):null);
+    if(!d)return;
+    if(!byDate[d])byDate[d]={cal:0,protein:0,meals:[]};
+    byDate[d].cal+=Number(m.totalCalories)||0;
+    byDate[d].protein+=Number(m.protein)||0;
+    byDate[d].meals.push(m);
+  });
+
+  const dates=Object.keys(byDate).sort();
+  const last14=dates.slice(-14).map(d=>byDate[d]);
+  const totalDays=dates.length;
+
+  // 1. Day-of-week overage pattern — needs 14+ days
+  if(totalDays>=14){
+    const byWeekday=[0,1,2,3,4,5,6].map(wd=>{
+      const days=dates.filter(d=>new Date(d).getDay()===wd).map(d=>byDate[d].cal);
+      return{wd,avg:days.length?days.reduce((a,b)=>a+b,0)/days.length:0,count:days.length};
+    }).filter(x=>x.count>=2);
+    if(byWeekday.length>=4){
+      const overall=byWeekday.reduce((s,x)=>s+x.avg,0)/byWeekday.length;
+      const worst=byWeekday.reduce((a,b)=>b.avg>a.avg?b:a);
+      const diff=worst.avg-overall;
+      if(diff>overall*0.2&&worst.avg>goal){
+        insights.push({priority:8,icon:"📅",color:"#ff6b35",msg:`You tend to go over on ${dayNames[worst.wd]}s (+${Math.round(worst.avg-goal)} kcal avg). Plan ahead for this week?`});
+      }
+    }
+  }
+
+  // 2. Low protein streak — 3+ consecutive days below 70% of target
+  const recent=last14.slice(-5);
+  if(recent.length>=3&&proteinTarget>0){
+    const below=recent.filter(d=>d.protein<proteinTarget*0.7).length;
+    if(below>=3){
+      insights.push({priority:9,icon:"💪",color:"#4facfe",msg:`Your protein has been low for ${below} days. Try Greek yogurt, eggs, or chicken to hit your ${proteinTarget}g target.`});
+    }
+  }
+
+  // 3. Days under goal streak (positive reinforcement)
+  let underStreak=0;
+  for(let i=last14.length-1;i>=0;i--){
+    if(last14[i].cal>0&&last14[i].cal<=goal)underStreak++;
+    else break;
+  }
+  if(underStreak>=3){
+    insights.push({priority:7,icon:"🎯",color:"#00e5a0",msg:`${underStreak} days under goal in a row — you're building a real habit. Keep it up!`});
+  }
+
+  // 4. Weekend vs weekday difference
+  if(totalDays>=14){
+    const weekends=dates.filter(d=>{const dn=new Date(d).getDay();return dn===0||dn===6;}).map(d=>byDate[d].cal).filter(c=>c>0);
+    const weekdays=dates.filter(d=>{const dn=new Date(d).getDay();return dn>=1&&dn<=5;}).map(d=>byDate[d].cal).filter(c=>c>0);
+    if(weekends.length>=2&&weekdays.length>=3){
+      const weAvg=weekends.reduce((a,b)=>a+b,0)/weekends.length;
+      const wkAvg=weekdays.reduce((a,b)=>a+b,0)/weekdays.length;
+      if(weAvg-wkAvg>wkAvg*0.15){
+        insights.push({priority:6,icon:"🍔",color:"#ff6b35",msg:`Weekends run ${Math.round(weAvg-wkAvg)} kcal higher than weekdays. Plan one mindful meal this weekend.`});
+      }
+    }
+  }
+
+  // 5. Late-day calorie opportunity — it's evening and they have lots left
+  if(hour>=17&&consumed>0){
+    const remaining=goal-consumed;
+    if(remaining>400&&remaining<800){
+      insights.push({priority:8,icon:"🍽️",color:"#00e5a0",msg:`You have ${remaining} kcal left. A balanced dinner (chicken + rice + veg) fits perfectly.`});
+    }else if(remaining>800){
+      insights.push({priority:7,icon:"⚠️",color:"#ff6b35",msg:`${remaining} kcal left — don't skip dinner. Undereating slows progress.`});
+    }
+  }
+
+  // 6. No breakfast by 10am
+  if(hour>=10&&hour<14&&consumed===0){
+    insights.push({priority:9,icon:"☀️",color:"#ff6b35",msg:`No meals logged yet today. Even a small breakfast now stabilizes energy and curbs cravings later.`});
+  }
+
+  // 7. Late-night eater pattern
+  const lateMeals=(allHistory||[]).filter(m=>{if(!m.timestamp)return false;const h=new Date(m.timestamp).getHours();return h>=21;}).length;
+  if(totalDays>=7&&lateMeals/Math.max(totalDays,1)>0.4){
+    insights.push({priority:5,icon:"🌙",color:"#a78bfa",msg:`You often eat after 9pm. Try to finish meals 2-3 hours before sleep for better rest.`});
+  }
+
+  // 8. Health score average (last 7 days)
+  const recentScores=last14.slice(-7).flatMap(d=>d.meals.map(m=>m.healthScore||5));
+  if(recentScores.length>=5){
+    const avg=recentScores.reduce((a,b)=>a+b,0)/recentScores.length;
+    if(avg>=7.5){
+      insights.push({priority:6,icon:"✨",color:"#00e5a0",msg:`Your meals have averaged ${avg.toFixed(1)}/10 health score this week — premium quality eating.`});
+    }else if(avg<4.5){
+      insights.push({priority:7,icon:"🥗",color:"#ff6b35",msg:`Your recent meals average ${avg.toFixed(1)}/10. Try adding more vegetables or swapping one processed meal.`});
+    }
+  }
+
+  // 9. Approaching goal (in-day)
+  if(consumed>0&&goal>0){
+    const pct=consumed/goal;
+    if(pct>=0.9&&pct<=1.0&&hour<20){
+      insights.push({priority:9,icon:"🎯",color:"#00e5a0",msg:`${goal-consumed} kcal left — plenty of room for a light snack if you're hungry later.`});
+    }else if(pct>1.1&&hour<20){
+      insights.push({priority:9,icon:"⚠️",color:"#ff4757",msg:`You're ${consumed-goal} kcal over. Skip or lighten your next meal to get back on track.`});
+    }
+  }
+
+  // Sort by priority descending, return top 3
+  return insights.sort((a,b)=>b.priority-a.priority).slice(0,3);
+};
 const BADGES=[{id:"first_meal",icon:"🍽️",name:"First Bite",desc:"Log your first meal",check:(s)=>s.totalMeals>=1},{id:"hydrated",icon:"💧",name:"Hydration Hero",desc:"Hit water goal",check:(s)=>s.waterGoalHits>=1},{id:"streak3",icon:"🔥",name:"3-Day Streak",desc:"Log meals 3 days in a row",check:(s)=>s.streak>=3},{id:"streak7",icon:"⚡",name:"Week Warrior",desc:"7-day logging streak",check:(s)=>s.streak>=7},{id:"meals10",icon:"🏅",name:"10 Meals Logged",desc:"Track 10 meals total",check:(s)=>s.totalMeals>=10},{id:"undergoal",icon:"🎯",name:"On Target",desc:"Stay under calorie goal",check:(s)=>s.daysUnderGoal>=1},{id:"earlybird",icon:"🌅",name:"Early Bird",desc:"Log breakfast before 9am",check:(s)=>s.earlyBreakfast>=1},{id:"coach",icon:"🧠",name:"Coach's Pet",desc:"Open app 5 days running",check:(s)=>s.streak>=5}];
 
 const saveProfile=async(uid,profile)=>{
@@ -1332,6 +1449,8 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
 
   const coachMsg=()=>{const pct=Math.round((consumed/goal)*100);if(consumed===0)return{msg:coachGreeting(profile.name),color:T.accent};if(pct<50)return{msg:`You've had ${consumed} kcal so far. ${goal-consumed} more to go today.`,color:T.blue};if(pct<90)return{msg:`Almost at your goal! Just ${goal-consumed} kcal left. Keep it up! 💪`,color:T.orange};if(pct<=105)return{msg:`Goal reached! Great discipline today, ${profile.name}. 🌙`,color:T.accent};return{msg:`You're ${consumed-goal} kcal over today. Go easy on the next meal.`,color:T.danger};};
   const cm=coachMsg();
+  // Smart coach insights from actual data
+  const smartInsights=useMemo(()=>computeSmartCoach({allHistory,recentDays,goal,profile,consumed,todayMeals:mealLog}),[allHistory,recentDays,goal,profile.name,consumed,mealLog]);
   // Live badge stats — derived from real data so badges unlock immediately
   const liveBadgeStats=useMemo(()=>{
     const daysUnderGoal=Object.values(recentDays||{}).filter(d=>d&&d.consumed>0&&d.consumed<=goal).length;
@@ -1450,12 +1569,26 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
         <div className="bob-float" style={{width:36,height:36,borderRadius:12,background:`${cm.color}18`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,border:`1px solid ${cm.color}25`}}><Brain size={18}/></div>
         <div><p style={{fontSize:10,fontWeight:700,color:cm.color,textTransform:"uppercase",letterSpacing:"1px",marginBottom:4}}>Your Coach</p><p style={{fontSize:13,color:T.text,lineHeight:1.6,fontWeight:500}}>{cm.msg}</p></div>
       </div>
-      <div onClick={()=>setTipCardIdx(i=>(i+1)%coachTips.length)} style={{padding:"10px 14px",background:"rgba(255,255,255,0.03)",borderRadius:12,borderLeft:`3px solid ${T.orange}`,boxShadow:"inset 0 1px 0 rgba(255,255,255,0.02)",cursor:"pointer",transition:"all .2s"}}>
-        <p style={{fontSize:12,color:"#d0c090",lineHeight:1.55}}>{coachTips[tipCardIdx]}</p>
-      </div>
-      <div style={{display:"flex",justifyContent:"center",gap:5,marginTop:8}}>
-        {coachTips.map((_,i)=>(<div key={i} style={{width:i===tipCardIdx?14:5,height:5,borderRadius:99,background:i===tipCardIdx?T.orange:T.border,transition:"all .3s"}}/>))}
-      </div>
+      {(()=>{
+        // Build tip/insight carousel — smart insights first, fallback to generic tips
+        const items=smartInsights.length>0
+          ?smartInsights.map(i=>({smart:true,icon:i.icon,color:i.color,text:i.msg}))
+          :coachTips.map(t=>({smart:false,icon:"💡",color:T.orange,text:t.replace("💡 ","")}));
+        const currentIdx=tipCardIdx%items.length;
+        const current=items[currentIdx];
+        return(<>
+          <div onClick={()=>setTipCardIdx(i=>(i+1)%items.length)} style={{padding:"12px 14px",background:`${current.color}0a`,borderRadius:12,borderLeft:`3px solid ${current.color}`,boxShadow:"inset 0 1px 0 rgba(255,255,255,0.02)",cursor:"pointer",transition:"all .2s",display:"flex",alignItems:"flex-start",gap:10}}>
+            <span style={{fontSize:16,flexShrink:0,lineHeight:1.4}}>{current.icon}</span>
+            <div style={{flex:1,minWidth:0}}>
+              {current.smart&&<p style={{fontSize:9,fontWeight:800,color:current.color,textTransform:"uppercase",letterSpacing:"1px",marginBottom:3}}>Smart Insight</p>}
+              <p style={{fontSize:12.5,color:T.text,lineHeight:1.55,fontWeight:500}}>{current.text}</p>
+            </div>
+          </div>
+          <div style={{display:"flex",justifyContent:"center",gap:5,marginTop:8}}>
+            {items.map((_,i)=>(<div key={i} style={{width:i===currentIdx?14:5,height:5,borderRadius:99,background:i===currentIdx?current.color:T.border,transition:"all .3s"}}/>))}
+          </div>
+        </>);
+      })()}
     </div>)}
 
     <div style={{padding:"16px 16px 120px",maxWidth:480,margin:"0 auto"}}>
