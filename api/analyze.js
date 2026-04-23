@@ -283,7 +283,8 @@ If you see a specific dish you recognize (Big Mac, jollof rice, pad thai, etc.),
       body: JSON.stringify({
         model: analysisModel,
         max_tokens: 2500,
-        temperature: isImage ? 0.15 : 0.3,
+        // Opus 4.7 doesn't support temperature. Only set it for Sonnet (text path).
+        ...(isImage ? {} : { temperature: 0.3 }),
         messages: [{ role: "user", content: enhancedContent }],
       }),
     });
