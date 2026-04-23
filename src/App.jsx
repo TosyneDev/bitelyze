@@ -1102,7 +1102,7 @@ function CoachChat({open,onClose,profile,goal,consumed,todayMeals,allHistory,uid
   };
 
   if(!open)return null;
-  return(<div style={{position:"fixed",inset:0,zIndex:300,background:T.bg,display:"flex",flexDirection:"column",animation:"fadeIn .25s ease"}}>
+  return(<div style={{position:"fixed",inset:0,zIndex:2000,background:T.bg,display:"flex",flexDirection:"column",animation:"fadeIn .25s ease"}}>
     {/* Header */}
     <div style={{padding:"calc(14px + env(safe-area-inset-top)) 18px 14px",background:T.headerBg,borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:12,backdropFilter:"blur(20px)"}}>
       <div style={{width:40,height:40,borderRadius:12,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 16px ${T.accentGlow}`}}><Brain size={20} color="#000"/></div>
