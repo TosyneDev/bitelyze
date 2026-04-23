@@ -130,17 +130,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing content" });
     }
 
-    // ── Two-Step Analysis ──
+    // ── Smart Analysis Pipeline ──
     let usdaData = null;
     let foodQuery = foodText || null;
-
-    // Step 1: Identify food (for images, use Claude to identify first)
     const isImage = Array.isArray(content) && content.some(c => c.type === "image");
-    if (isImage && !foodQuery) {
-      foodQuery = await identifyFoodFromImage(content, apiKey);
-    }
 
-    // Step 2: Search USDA for real nutritional data
+    // For text input: USDA lookup helps since we know exactly what user typed
+    // For images: skip pre-identification — Opus 4.7 vision handles this in one pass
+    // (Avoids "hint pollution" where a wrong first-pass ID biases the final analysis)
     if (foodQuery) {
       // Clean queries — remove portion text in parens to improve USDA hit rate
       const cleanFood = (s) => s.replace(/\([^)]*\)/g, "").replace(/\d+\s*(slices?|cups?|oz|g|ml|pieces?|tbsp|tsp)/gi, "").trim();
@@ -259,15 +256,23 @@ Here is REAL nutritional reference data from the USDA database for the identifie
 ${JSON.stringify(usdaData, null, 2)}` : "";
 
     if (isImage) {
+      // For images, prepend an explicit "look first, then analyze" instruction
+      const visionPrompt = `Before anything else, describe what you ACTUALLY see in this image in one short sentence (internally — do not include in output). Then apply the full analysis below.
+
+If you see a specific dish you recognize (Big Mac, jollof rice, pad thai, etc.), name it specifically — do NOT use generic categories. If you're unsure what the dish is, set confidence to medium or low and say so in confidenceNote.
+
+` + PRECISION_PROMPT + usdaAddendum;
       enhancedContent = [
         ...content.filter(c => c.type === "image"),
-        { type: "text", text: PRECISION_PROMPT + usdaAddendum }
+        { type: "text", text: visionPrompt }
       ];
     } else {
       enhancedContent = `The user describes eating: "${foodText}". ` + PRECISION_PROMPT + usdaAddendum;
     }
 
     // Step 4: Send to Claude for final analysis
+    // Use Opus 4.7 for images (best vision), Sonnet 4.6 for text (faster)
+    const analysisModel = isImage ? "claude-opus-4-7" : "claude-sonnet-4-6";
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -276,9 +281,9 @@ ${JSON.stringify(usdaData, null, 2)}` : "";
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
+        model: analysisModel,
         max_tokens: 2500,
-        temperature: 0.3,
+        temperature: isImage ? 0.15 : 0.3,
         messages: [{ role: "user", content: enhancedContent }],
       }),
     });
