@@ -8,7 +8,7 @@ import {
 import {
   initializeFirestore, doc, setDoc, getDoc, arrayUnion
 } from "firebase/firestore";
-import { Camera, ClipboardList, BarChart3, User, Flame, Target, Zap, UtensilsCrossed, Brain, Droplets, Trophy, Heart, ArrowLeft, ArrowRight, Upload, Search, Settings, LogOut, ChevronRight, ChevronLeft, Lock, Unlock, HelpCircle, Plus, Minus, X, Star, Activity, Scale, Ruler, Calendar, Sun, Moon, Check, ChevronUp, ChevronDown, RotateCcw, Trash2, Share2, Download, FlaskConical, Clock, Pencil, AlertTriangle, Info, Rocket, Dumbbell, Sprout, Sofa, Footprints, TrendingUp, TrendingDown, Lightbulb, Sparkles, Stethoscope, Repeat } from "lucide-react";
+import { Camera, ClipboardList, BarChart3, User, Flame, Target, Zap, UtensilsCrossed, Brain, Droplets, Trophy, Heart, ArrowLeft, ArrowRight, Upload, Search, Settings, LogOut, ChevronRight, ChevronLeft, Lock, Unlock, HelpCircle, Plus, Minus, X, Star, Activity, Scale, Ruler, Calendar, Sun, Moon, Check, ChevronUp, ChevronDown, RotateCcw, Trash2, Share2, Download, FlaskConical, Clock, Pencil, AlertTriangle, Info, Rocket, Dumbbell, Sprout, Sofa, Footprints, TrendingUp, TrendingDown, Lightbulb, Sparkles, Stethoscope, Repeat, MessageCircle, Send } from "lucide-react";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBdin15LOt0vwN3H1EXAnFox2Zyjek5J4Y",
@@ -1031,8 +1031,112 @@ function DashboardTour({name,onDone}){
   </div>);
 }
 
+function CoachChat({open,onClose,profile,goal,consumed,todayMeals,allHistory,uid}){
+  const[messages,setMessages]=useState(()=>{
+    try{const saved=localStorage.getItem(`bitelyze_coach_${uid}`);return saved?JSON.parse(saved):[];}catch(e){return[];}
+  });
+  const[input,setInput]=useState("");
+  const[sending,setSending]=useState(false);
+  const[err,setErr]=useState(null);
+  const scrollRef=useRef(null);
+  const inputRef=useRef(null);
+
+  useEffect(()=>{
+    try{localStorage.setItem(`bitelyze_coach_${uid}`,JSON.stringify(messages));}catch(e){}
+    if(scrollRef.current)scrollRef.current.scrollTop=scrollRef.current.scrollHeight;
+  },[messages,uid]);
+
+  useEffect(()=>{
+    if(open&&messages.length===0){
+      const greeting=profile.name?`Hey ${profile.name} 👋 I'm your Bitelyze coach. Ask me anything — food suggestions, "can I have this?", stress eating, meal plans, or just vent. I know your goals and recent meals.`:`Hey! I'm your Bitelyze coach. Ask me anything — food suggestions, whether something fits your goal, or just chat. I know your profile and recent meals.`;
+      setMessages([{role:"assistant",content:greeting,ts:Date.now()}]);
+    }
+  },[open]);
+
+  // Build recent summary for context (last 7 days)
+  const recentSummary=useMemo(()=>{
+    if(!allHistory||allHistory.length===0)return null;
+    const byDate={};
+    const now=new Date();
+    const sevenAgo=new Date(now);sevenAgo.setDate(sevenAgo.getDate()-7);
+    allHistory.forEach(m=>{
+      const d=m.date||(m.timestamp?new Date(m.timestamp).toISOString().slice(0,10):null);
+      if(!d)return;
+      const dt=new Date(d);
+      if(dt<sevenAgo||dt>now)return;
+      if(!byDate[d])byDate[d]={cal:0,protein:0,meals:[]};
+      byDate[d].cal+=Number(m.totalCalories)||0;
+      byDate[d].protein+=Number(m.protein)||0;
+      byDate[d].meals.push(m.foodName);
+    });
+    const days=Object.entries(byDate).map(([d,v])=>`${d}: ${v.cal} kcal, ${Math.round(v.protein)}g protein (${v.meals.slice(0,3).join(", ")})`);
+    return days.length>0?days.join("\n"):null;
+  },[allHistory]);
+
+  const send=async()=>{
+    const text=input.trim();
+    if(!text||sending)return;
+    const userMsg={role:"user",content:text,ts:Date.now()};
+    const newMessages=[...messages,userMsg];
+    setMessages(newMessages);
+    setInput("");
+    setSending(true);
+    setErr(null);
+    try{
+      const userContext={
+        name:profile.name,goal:profile.goal,goalSpeed:profile.goalSpeed,height:profile.height,weight:profile.weight,targetWeight:profile.targetWeight,
+        dailyGoal:goal,consumed,todayMeals:todayMeals?.slice(-5),recentSummary,motivation:profile.motivation,blockers:profile.blockers,habits:profile.habits
+      };
+      const res=await fetch("/api/coach",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:newMessages.map(m=>({role:m.role,content:m.content})),userContext,userEmail:auth.currentUser?.email||null})});
+      if(!res.ok){
+        const e=await res.json().catch(()=>({}));
+        setErr(e.error?.message||e.error||"Coach is offline. Try again.");
+        setSending(false);return;
+      }
+      const data=await res.json();
+      setMessages(m=>[...m,{role:"assistant",content:data.reply||"Sorry, I didn't catch that. Try again?",ts:Date.now()}]);
+    }catch(e){
+      setErr("Network error. Try again.");
+    }
+    setSending(false);
+  };
+
+  if(!open)return null;
+  return(<div style={{position:"fixed",inset:0,zIndex:300,background:T.bg,display:"flex",flexDirection:"column",animation:"fadeIn .25s ease"}}>
+    {/* Header */}
+    <div style={{padding:"calc(14px + env(safe-area-inset-top)) 18px 14px",background:T.headerBg,borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:12,backdropFilter:"blur(20px)"}}>
+      <div style={{width:40,height:40,borderRadius:12,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 16px ${T.accentGlow}`}}><Brain size={20} color="#000"/></div>
+      <div style={{flex:1}}>
+        <p style={{fontSize:15,fontWeight:800,color:T.text,lineHeight:1.1}}>Bitelyze Coach</p>
+        <p style={{fontSize:11,color:T.accent,fontWeight:600,display:"flex",alignItems:"center",gap:5}}><span style={{width:6,height:6,borderRadius:"50%",background:T.accent,display:"inline-block",boxShadow:`0 0 6px ${T.accent}`}}/>Online</p>
+      </div>
+      <button onClick={onClose} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><X size={18}/></button>
+    </div>
+
+    {/* Messages */}
+    <div ref={scrollRef} style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:10}}>
+      {messages.map((m,i)=>(<div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start",animation:"fadeIn .3s ease"}}>
+        <div style={{maxWidth:"80%",padding:"11px 14px",borderRadius:m.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",background:m.role==="user"?T.accent:T.card,border:m.role==="user"?"none":`1px solid ${T.border}`,color:m.role==="user"?"#000":T.text,fontSize:13.5,lineHeight:1.55,fontWeight:m.role==="user"?600:500,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{m.content}</div>
+      </div>))}
+      {sending&&<div style={{display:"flex",justifyContent:"flex-start"}}>
+        <div style={{padding:"12px 16px",borderRadius:"16px 16px 16px 4px",background:T.card,border:`1px solid ${T.border}`,display:"flex",gap:4,alignItems:"center"}}>
+          {[0,1,2].map(i=>(<span key={i} style={{width:6,height:6,borderRadius:"50%",background:T.accent,display:"inline-block",animation:`pulse 1.2s ease-in-out ${i*0.2}s infinite`}}/>))}
+        </div>
+      </div>}
+      {err&&<p style={{textAlign:"center",fontSize:12,color:T.danger,padding:"10px"}}>{err}</p>}
+    </div>
+
+    {/* Input */}
+    <div style={{padding:"12px 14px calc(12px + env(safe-area-inset-bottom))",borderTop:`1px solid ${T.border}`,background:T.card,display:"flex",gap:8,alignItems:"flex-end"}}>
+      <textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}} placeholder="Ask your coach anything..." rows={1} style={{flex:1,padding:"11px 14px",background:T.inputBg,border:`1px solid ${T.border}`,borderRadius:14,color:T.text,fontSize:14,outline:"none",fontFamily:"inherit",resize:"none",maxHeight:100,lineHeight:1.4}}/>
+      <button onClick={send} disabled={!input.trim()||sending} style={{width:44,height:44,borderRadius:12,border:"none",background:input.trim()&&!sending?T.accent:T.inputBg,color:input.trim()&&!sending?"#000":T.muted,cursor:input.trim()&&!sending?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s",flexShrink:0}}><Send size={18}/></button>
+    </div>
+  </div>);
+}
+
 function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}){
   const[tab,setTab]=useState("analyze");
+  const[coachOpen,setCoachOpen]=useState(false);
   const[showTour,setShowTour]=useState(()=>{try{return!localStorage.getItem(`bitelyze_tour_v1_${uid}`);}catch(e){return false;}});
   const[condensedStepIdx,setCondensedStepIdx]=useState(null);// null=closed, 0..N=current question, "done"=success
   const[reminderDismissed,setReminderDismissed]=useState(()=>{
@@ -1513,6 +1617,14 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
         {key==="motivation"&&<StepMotivation {...common}/>}
       </div>);
     })()}
+
+    {/* ── Floating Coach Button — visible on all tabs ── */}
+    {!coachOpen&&<button onClick={()=>setCoachOpen(true)} style={{position:"fixed",bottom:"calc(90px + env(safe-area-inset-bottom))",right:16,zIndex:900,width:56,height:56,borderRadius:"50%",border:"none",background:`linear-gradient(135deg,${T.accent},#00b87a)`,color:"#000",cursor:"pointer",boxShadow:`0 4px 24px ${T.accentGlow}, 0 0 0 2px ${T.bg}`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",animation:"pulseGlow 3s ease-in-out infinite"}} aria-label="Open Coach Chat">
+      <Brain size={24}/>
+    </button>}
+
+    {/* ── Coach Chat ── */}
+    <CoachChat open={coachOpen} onClose={()=>setCoachOpen(false)} profile={profile} goal={goal} consumed={consumed} todayMeals={mealLog} allHistory={allHistory} uid={uid}/>
 
     {/* ── Toast Notification ── */}
     {toast&&(<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:`linear-gradient(135deg,${T.accent},#00b87a)`,color:"#000",padding:"12px 24px",borderRadius:16,fontSize:14,fontWeight:700,zIndex:9999,animation:"slideUp .3s ease forwards",boxShadow:`0 8px 32px ${T.accentGlow}`,maxWidth:"90%",textAlign:"center"}}>{toast}</div>)}
