@@ -26,6 +26,112 @@ function checkRateLimit(req, email) {
   return true;
 }
 
+// ── Curated nutrition fallback (per 100g) for dishes USDA misses or mismatches ──
+// USDA fuzzy-matches poorly on non-Western cuisines (e.g. "tomato stew" -> "stewed
+// potatoes with tomatoes"). For these, we use reasonable averages for typical
+// home-cooked portions. Final calorie computation is still delegated to Opus 4.7,
+// which can override based on what it actually sees in the image.
+const CURATED_NUTRITION = {
+  // Nigerian / West African — starches & swallows
+  "jollof rice":           { calories: 160, protein: 3,   carbs: 26, fat: 4.5, fiber: 1   },
+  "jollof":                { calories: 160, protein: 3,   carbs: 26, fat: 4.5, fiber: 1   },
+  "fried rice":            { calories: 185, protein: 5,   carbs: 26, fat: 7,   fiber: 2   },
+  "coconut rice":          { calories: 175, protein: 3,   carbs: 27, fat: 6,   fiber: 1   },
+  "ofada rice":            { calories: 150, protein: 3,   carbs: 30, fat: 1.5, fiber: 2   },
+  "pounded yam":           { calories: 120, protein: 2,   carbs: 28, fat: 0.2, fiber: 2   },
+  "fufu":                  { calories: 120, protein: 1,   carbs: 28, fat: 0.3, fiber: 1.5 },
+  "eba":                   { calories: 155, protein: 1,   carbs: 37, fat: 0.4, fiber: 2   },
+  "garri":                 { calories: 155, protein: 1,   carbs: 37, fat: 0.4, fiber: 2   },
+  "amala":                 { calories: 115, protein: 2,   carbs: 27, fat: 0.2, fiber: 2   },
+  "semovita":              { calories: 110, protein: 2.5, carbs: 23, fat: 0.4, fiber: 1   },
+  "semo":                  { calories: 110, protein: 2.5, carbs: 23, fat: 0.4, fiber: 1   },
+  "tuwo shinkafa":         { calories: 125, protein: 2,   carbs: 28, fat: 0.3, fiber: 1   },
+  "wheat swallow":         { calories: 130, protein: 4,   carbs: 27, fat: 0.5, fiber: 3   },
+
+  // Nigerian — soups (oil-based, calorie-dense)
+  "egusi soup":            { calories: 200, protein: 8,   carbs: 6,  fat: 16,  fiber: 3   },
+  "egusi":                 { calories: 200, protein: 8,   carbs: 6,  fat: 16,  fiber: 3   },
+  "efo riro":              { calories: 135, protein: 5,   carbs: 5,  fat: 10,  fiber: 2   },
+  "ogbono soup":           { calories: 180, protein: 6,   carbs: 6,  fat: 14,  fiber: 3   },
+  "okra soup":             { calories: 115, protein: 4,   carbs: 5,  fat: 8,   fiber: 2   },
+  "okro soup":             { calories: 115, protein: 4,   carbs: 5,  fat: 8,   fiber: 2   },
+  "bitter leaf soup":      { calories: 140, protein: 6,   carbs: 4,  fat: 11,  fiber: 3   },
+  "onugbu soup":           { calories: 140, protein: 6,   carbs: 4,  fat: 11,  fiber: 3   },
+  "afang soup":            { calories: 150, protein: 7,   carbs: 4,  fat: 12,  fiber: 3   },
+  "edikaikong":            { calories: 130, protein: 6,   carbs: 4,  fat: 10,  fiber: 3   },
+  "banga soup":            { calories: 210, protein: 6,   carbs: 4,  fat: 19,  fiber: 2   },
+  "pepper soup":           { calories: 90,  protein: 13,  carbs: 2,  fat: 3,   fiber: 0.5 },
+  "goat pepper soup":      { calories: 95,  protein: 14,  carbs: 2,  fat: 3.5, fiber: 0.5 },
+  "fish pepper soup":      { calories: 75,  protein: 13,  carbs: 2,  fat: 1.5, fiber: 0.5 },
+  "nkwobi":                { calories: 240, protein: 16,  carbs: 3,  fat: 18,  fiber: 1   },
+
+  // Nigerian — stews, proteins, small chops
+  "tomato stew":           { calories: 170, protein: 3,   carbs: 6,  fat: 15,  fiber: 1.5 },
+  "ata din din":           { calories: 170, protein: 3,   carbs: 6,  fat: 15,  fiber: 1.5 },
+  "red stew":              { calories: 170, protein: 3,   carbs: 6,  fat: 15,  fiber: 1.5 },
+  "stew":                  { calories: 150, protein: 8,   carbs: 5,  fat: 11,  fiber: 1   },
+  "suya":                  { calories: 240, protein: 27,  carbs: 3,  fat: 13,  fiber: 1   },
+  "moi moi":               { calories: 140, protein: 9,   carbs: 14, fat: 5,   fiber: 4   },
+  "moin moin":             { calories: 140, protein: 9,   carbs: 14, fat: 5,   fiber: 4   },
+  "akara":                 { calories: 280, protein: 9,   carbs: 18, fat: 18,  fiber: 4   },
+  "ewa agoyin":            { calories: 170, protein: 8,   carbs: 20, fat: 7,   fiber: 5   },
+  "beans porridge":        { calories: 135, protein: 8,   carbs: 22, fat: 2,   fiber: 6   },
+  "boli":                  { calories: 130, protein: 1,   carbs: 34, fat: 0.4, fiber: 2   },
+  "dodo":                  { calories: 190, protein: 1.3, carbs: 32, fat: 7,   fiber: 2   },
+  "fried plantain":        { calories: 190, protein: 1.3, carbs: 32, fat: 7,   fiber: 2   },
+  "roasted plantain":      { calories: 122, protein: 1.3, carbs: 32, fat: 0.4, fiber: 2.3 },
+  "puff puff":             { calories: 330, protein: 4,   carbs: 45, fat: 15,  fiber: 1.5 },
+  "meat pie":              { calories: 290, protein: 7,   carbs: 28, fat: 17,  fiber: 1.5 },
+  "fried yam":             { calories: 200, protein: 1.5, carbs: 30, fat: 8,   fiber: 3   },
+  "boiled yam":            { calories: 118, protein: 1.5, carbs: 28, fat: 0.2, fiber: 4   },
+  "roasted yam":           { calories: 130, protein: 1.5, carbs: 30, fat: 0.3, fiber: 4   },
+  "asun":                  { calories: 260, protein: 24,  carbs: 4,  fat: 17,  fiber: 1   },
+  "chin chin":             { calories: 430, protein: 6,   carbs: 60, fat: 18,  fiber: 1.5 },
+
+  // Other African
+  "injera":                { calories: 180, protein: 6,   carbs: 37, fat: 1,   fiber: 5   },
+  "doro wat":              { calories: 160, protein: 20,  carbs: 3,  fat: 8,   fiber: 1   },
+  "waakye":                { calories: 150, protein: 5,   carbs: 28, fat: 2,   fiber: 3   },
+  "kelewele":              { calories: 180, protein: 1.2, carbs: 30, fat: 6,   fiber: 2   },
+
+  // Asian (USDA often misidentifies)
+  "pad thai":              { calories: 200, protein: 8,   carbs: 26, fat: 7,   fiber: 2   },
+  "biryani":               { calories: 180, protein: 6,   carbs: 22, fat: 7,   fiber: 1.5 },
+  "chicken biryani":       { calories: 185, protein: 10,  carbs: 22, fat: 7,   fiber: 1.5 },
+  "butter chicken":        { calories: 180, protein: 12,  carbs: 5,  fat: 12,  fiber: 1   },
+  "chicken tikka masala":  { calories: 160, protein: 15,  carbs: 6,  fat: 9,   fiber: 1   },
+  "tikka masala":          { calories: 160, protein: 15,  carbs: 6,  fat: 9,   fiber: 1   },
+  "pho":                   { calories: 75,  protein: 5,   carbs: 10, fat: 1,   fiber: 1   },
+  "ramen":                 { calories: 140, protein: 5,   carbs: 20, fat: 5,   fiber: 1   },
+  "sushi":                 { calories: 150, protein: 6,   carbs: 28, fat: 0.5, fiber: 0.5 },
+  "fried noodles":         { calories: 200, protein: 6,   carbs: 27, fat: 8,   fiber: 2   },
+
+  // Middle Eastern
+  "shawarma":              { calories: 250, protein: 18,  carbs: 22, fat: 10,  fiber: 2   },
+  "chicken shawarma":      { calories: 245, protein: 19,  carbs: 22, fat: 9,   fiber: 2   },
+  "hummus":                { calories: 170, protein: 5,   carbs: 12, fat: 12,  fiber: 5   },
+  "falafel":               { calories: 330, protein: 13,  carbs: 32, fat: 18,  fiber: 4   },
+  "kebab":                 { calories: 230, protein: 20,  carbs: 2,  fat: 16,  fiber: 0   },
+};
+
+function lookupCurated(query) {
+  const q = query.toLowerCase().trim();
+  if (CURATED_NUTRITION[q]) {
+    return [{ name: q, servingSize: "100g", nutrients: CURATED_NUTRITION[q] }];
+  }
+  // Longest substring match so "fried plantain" beats "plantain" style lookups
+  let bestKey = null;
+  for (const key of Object.keys(CURATED_NUTRITION)) {
+    if (q.includes(key) && (!bestKey || key.length > bestKey.length)) {
+      bestKey = key;
+    }
+  }
+  if (bestKey) {
+    return [{ name: bestKey, servingSize: "100g", nutrients: CURATED_NUTRITION[bestKey] }];
+  }
+  return null;
+}
+
 // ── Step 1: Search USDA FoodData Central for real nutrition data ──
 async function searchUSDA(query) {
   const USDA_KEY = process.env.USDA_API_KEY || "DEMO_KEY";
@@ -176,9 +282,16 @@ export default async function handler(req, res) {
         .slice(0, 5);
       const allResults = [];
       for (const food of foods) {
+        // Try curated first — avoids USDA mismatches like "tomato stew" -> "stewed potatoes with tomatoes"
+        const curated = lookupCurated(food);
+        if (curated) {
+          allResults.push({ query: food, matches: curated, source: "curated" });
+          console.log(`[analyze] curated: "${food}" -> ${curated[0].name} (${curated[0].nutrients.calories}kcal/100g)`);
+          continue;
+        }
         const results = await searchUSDA(food);
         if (results && results.length > 0) {
-          allResults.push({ query: food, matches: results });
+          allResults.push({ query: food, matches: results, source: "usda" });
         }
       }
       if (allResults.length > 0) {
@@ -186,9 +299,9 @@ export default async function handler(req, res) {
       }
       const summary = allResults.map(r => {
         const top = r.matches[0];
-        return `${r.query} -> ${top?.name} (${top?.nutrients?.calories ?? "?"}kcal/100g)`;
+        return `[${r.source}] ${r.query} -> ${top?.name} (${top?.nutrients?.calories ?? "?"}kcal/100g)`;
       }).join("; ");
-      console.log(`[analyze] USDA matched ${allResults.length}/${foods.length}: ${summary}`);
+      console.log(`[analyze] reference matched ${allResults.length}/${foods.length}: ${summary}`);
     }
 
     // Step 3: Build the enhanced prompt with USDA data
@@ -287,12 +400,12 @@ Return ONLY valid JSON. No markdown, no backticks.
 Context: Analyzing for ${profileStr}. User has eaten ${consumed}kcal of their ${dailyGoal}kcal goal so far today.`;
 
     const usdaReferenceNote = isImage
-      ? "USDA nutritional reference data for foods pre-identified from this image by a quick first-pass model. The pre-identification may be wrong. ONLY use these values if they match what you ACTUALLY see. If any pre-identified item isn't in the image, or if you identify the dish differently, ignore that USDA entry and use your own vision-based estimate. Do NOT let the pre-identification override what you see. Scale values to the portion you actually see (USDA values are per 100g unless serving size specified)."
-      : "REAL nutritional reference data from the USDA database for the identified foods. Use this as your primary source for calorie and macro values; scale to the estimated portion size. USDA values are per 100g unless serving size specified.";
+      ? "Nutritional reference data for foods pre-identified from this image by a quick first-pass model. Each entry is tagged [curated] (hand-curated per-100g values for dishes USDA covers poorly — trust these for the named dish) or [usda] (USDA FoodData Central fuzzy match — may have matched the wrong food). The pre-identification itself may be wrong. ONLY use these values if they match what you ACTUALLY see. If any pre-identified item isn't in the image, or if you identify the dish differently, ignore that entry and use your own vision-based estimate. Do NOT let the pre-identification override what you see. Scale values to the portion you actually see (all values per 100g unless serving size specified)."
+      : "Nutritional reference data for the identified foods. [curated] entries are hand-curated per-100g values; [usda] entries are from USDA FoodData Central. Use as your primary source for calorie and macro values; scale to the estimated portion size. Values are per 100g unless serving size specified.";
 
     const usdaAddendum = usdaData ? `
 
-━━━ USDA REFERENCE DATA ━━━
+━━━ NUTRITIONAL REFERENCE DATA ━━━
 ${usdaReferenceNote}
 ${JSON.stringify(usdaData, null, 2)}` : "";
 
