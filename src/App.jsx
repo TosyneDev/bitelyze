@@ -8,7 +8,7 @@ import {
 import {
   initializeFirestore, doc, setDoc, getDoc, arrayUnion
 } from "firebase/firestore";
-import { Camera, ClipboardList, BarChart3, User, Flame, Target, Zap, UtensilsCrossed, Brain, Droplets, Trophy, Heart, ArrowLeft, ArrowRight, Upload, Search, Settings, LogOut, ChevronRight, ChevronLeft, Lock, Unlock, HelpCircle, Plus, Minus, X, Star, Activity, Scale, Ruler, Calendar, Sun, Moon, Check, ChevronUp, ChevronDown, RotateCcw, Trash2, Share2, Download, FlaskConical, Clock, Pencil, AlertTriangle, Info, Rocket, Dumbbell, Sprout, Sofa, Footprints, TrendingUp, TrendingDown, Lightbulb, Sparkles, Stethoscope, Repeat, MessageCircle, Send, MoreHorizontal, Palette, Smartphone, Share, ArrowUpRight, Apple, Bell, BellOff } from "lucide-react";
+import { Camera, ClipboardList, BarChart3, User, Flame, Target, Zap, UtensilsCrossed, Brain, Droplets, Trophy, Heart, ArrowLeft, ArrowRight, Upload, Search, Settings, LogOut, ChevronRight, ChevronLeft, Lock, Unlock, HelpCircle, Plus, Minus, X, Star, Activity, Scale, Ruler, Calendar, Sun, Moon, Check, ChevronUp, ChevronDown, RotateCcw, Trash2, Share2, Download, FlaskConical, Clock, Pencil, AlertTriangle, Info, Rocket, Dumbbell, Sprout, Sofa, Footprints, TrendingUp, TrendingDown, Lightbulb, Sparkles, Stethoscope, Repeat, MessageCircle, Send, MoreHorizontal, Palette, Smartphone, Share, ArrowUpRight, Apple, Bell, BellOff, Mic, MicOff, Copy } from "lucide-react";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBdin15LOt0vwN3H1EXAnFox2Zyjek5J4Y",
@@ -1171,7 +1171,7 @@ function CoachChat({open,onClose,profile,goal,consumed,todayMeals,allHistory,uid
 function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}){
   const[tab,setTab]=useState("analyze");
   const[coachOpen,setCoachOpen]=useState(false);
-  const[moreView,setMoreView]=useState(null);// null=menu, "profile"|"appearance"|"homescreen"
+  const[moreView,setMoreView]=useState(null);// null=menu, "profile"|"appearance"|"homescreen"|"weeklywrap"|"notifications"
   const[notifOpen,setNotifOpen]=useState(false);
   const[showTour,setShowTour]=useState(()=>{try{return!localStorage.getItem(`bitelyze_tour_v1_${uid}`);}catch(e){return false;}});
   const[condensedStepIdx,setCondensedStepIdx]=useState(null);// null=closed, 0..N=current question, "done"=success
@@ -1191,6 +1191,13 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
   const[result,setResult]=useState(null);
   const[error,setError]=useState(null);
   const[textFood,setTextFood]=useState("");
+  const[isRecording,setIsRecording]=useState(false);
+  const[voiceSupported]=useState(()=>typeof window!=="undefined"&&!!(window.SpeechRecognition||window.webkitSpeechRecognition));
+  const[voiceHintShown,setVoiceHintShown]=useState(()=>{try{return!!localStorage.getItem("bitelyze_voice_hint_shown");}catch(e){return false;}});
+  const recognitionRef=useRef(null);
+  const[showShareCard,setShowShareCard]=useState(false);
+  const[notifBannerDismissed,setNotifBannerDismissed]=useState(()=>{try{return!!localStorage.getItem(`bitelyze_notif_banner_dismissed_${uid}`);}catch(e){return false;}});
+  const[notifPermission,setNotifPermission]=useState(()=>typeof Notification!=="undefined"?Notification.permission:"default");
   const[allHistory,setAllHistory]=useState([]);
   const[remaining,setRemaining]=useState(()=>getRemainingAnalyses(uid));
   const[waterByDate,setWaterByDate]=useState({});
@@ -1320,6 +1327,199 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
     const t=setTimeout(()=>setToast(null),3000);
     return()=>clearTimeout(t);
   },[toast]);
+
+  // ── Voice logging (Web Speech API) ──
+  const startVoice=()=>{
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){setToast("Voice not supported in this browser");return;}
+    try{
+      const recognition=new SR();
+      recognition.continuous=true;
+      recognition.interimResults=true;
+      recognition.lang='en-US';
+      let baseText=textFood?textFood.trim()+' ':'';
+      recognition.onresult=(e)=>{
+        const transcript=Array.from(e.results).map(r=>r[0].transcript).join('');
+        setTextFood(baseText+transcript);
+      };
+      recognition.onerror=(e)=>{
+        setIsRecording(false);
+        if(e.error==='not-allowed'||e.error==='service-not-allowed')setToast("Mic permission denied");
+        else if(e.error==='no-speech')setToast("No speech detected");
+        else if(e.error!=='aborted')setToast("Voice error — try again");
+      };
+      recognition.onend=()=>{setIsRecording(false);};
+      recognitionRef.current=recognition;
+      recognition.start();
+      setIsRecording(true);
+      if(!voiceHintShown){
+        setToast("Hold to record your meal");
+        try{localStorage.setItem("bitelyze_voice_hint_shown","1");}catch(e){}
+        setVoiceHintShown(true);
+      }
+    }catch(err){setIsRecording(false);setToast("Voice unavailable");}
+  };
+  const stopVoice=()=>{
+    try{recognitionRef.current&&recognitionRef.current.stop();}catch(e){}
+    setIsRecording(false);
+  };
+
+  // ── Service worker registration (once on mount) ──
+  useEffect(()=>{
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    }
+  },[]);
+
+  // ── Weekly Wrap-Up: auto-open on Sunday once per week ──
+  useEffect(()=>{
+    if(!uid)return;
+    const now=new Date();
+    if(now.getDay()!==0)return;// 0 = Sunday
+    const sundayKey=ymdLocal(now);
+    const lastShownKey=`bitelyze_last_wrap_shown_${uid}`;
+    try{
+      const lastShown=localStorage.getItem(lastShownKey);
+      if(lastShown===sundayKey)return;
+      // Only auto-show if user has at least a few days of data
+      if(!allHistory||allHistory.length<3)return;
+      setTab("me");
+      setMoreView("weeklywrap");
+      localStorage.setItem(lastShownKey,sundayKey);
+    }catch(e){}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[uid,allHistory.length]);
+
+  // ── Client-side notification scheduler: checks on app open ──
+  useEffect(()=>{
+    if(typeof Notification==="undefined")return;
+    if(Notification.permission!=='granted')return;
+    if(localStorage.getItem('bitelyze_notif_enabled')!=='1')return;
+    try{
+      const now=new Date();
+      const hour=now.getHours();
+      const todayStr=ymdLocal(now);
+      const reminderKey=`bitelyze_last_reminder_${todayStr}`;
+      const lastReminder=localStorage.getItem(reminderKey);
+      const icon='/logo.svg';
+      // Morning nudge (8-10am) if no meals today
+      if(hour>=8&&hour<11&&consumed===0&&lastReminder!=='morning'){
+        new Notification('Good morning!',{body:'Start your day right — log your breakfast',icon});
+        localStorage.setItem(reminderKey,'morning');
+      }
+      // Dinner nudge (6-9pm) if no dinner logged
+      else if(hour>=18&&hour<21&&lastReminder!=='dinner'){
+        const hasDinner=mealLog.some(m=>m.time&&parseInt(m.time)>=17);
+        if(!hasDinner){
+          const left=Math.max(0,goal-consumed);
+          new Notification('Dinner logged?',{body:`${left} kcal left for today`,icon});
+          localStorage.setItem(reminderKey,'dinner');
+        }
+      }
+      // Streak rescue (9-11pm) if streak > 0 and no meals today
+      else if(hour>=21&&hour<23&&stats.streak>0&&consumed===0&&lastReminder!=='streak'){
+        new Notification(`Don't break your ${stats.streak}-day streak`,{body:'Log anything from today to keep the flame alive',icon});
+        localStorage.setItem(reminderKey,'streak');
+      }
+    }catch(e){}
+    // Runs once on mount — reminders are idempotent per (day, slot)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
+  // ── Request notification permission ──
+  const requestNotifPermission=async()=>{
+    if(typeof Notification==="undefined"){setToast("Notifications not supported");return;}
+    try{
+      const result=await Notification.requestPermission();
+      setNotifPermission(result);
+      if(result==='granted'){
+        try{localStorage.setItem('bitelyze_notif_enabled','1');}catch(e){}
+        setToast("Notifications enabled");
+        try{new Notification('Bitelyze',{body:"You're all set — we'll send gentle reminders",icon:'/logo.svg'});}catch(e){}
+      }else if(result==='denied'){
+        setToast("Blocked — enable in browser settings");
+      }
+    }catch(e){setToast("Could not enable notifications");}
+  };
+  const dismissNotifBanner=()=>{
+    try{localStorage.setItem(`bitelyze_notif_banner_dismissed_${uid}`,"1");}catch(e){}
+    setNotifBannerDismissed(true);
+  };
+  const toggleNotifEnabled=()=>{
+    const enabled=localStorage.getItem('bitelyze_notif_enabled')==='1';
+    if(enabled){
+      try{localStorage.setItem('bitelyze_notif_enabled','0');}catch(e){}
+      setToast("Reminders paused");
+    }else{
+      if(notifPermission==='granted'){
+        try{localStorage.setItem('bitelyze_notif_enabled','1');}catch(e){}
+        setToast("Reminders resumed");
+      }else{
+        requestNotifPermission();
+      }
+    }
+    // Force re-render
+    setNotifPermission(p=>p);
+  };
+
+  // ── Weekly wrap computation (last 7 days from allHistory) ──
+  const weeklyWrap=useMemo(()=>{
+    const now=new Date();
+    const endYmd=ymdLocal(now);
+    const startDate=new Date();startDate.setDate(startDate.getDate()-6);
+    const startYmd=ymdLocal(startDate);
+    const weekMeals=(allHistory||[]).filter(m=>{
+      const d=m.date||(m.timestamp?ymdLocal(new Date(m.timestamp)):null);
+      return d&&d>=startYmd&&d<=endYmd;
+    });
+    // Group by date
+    const byDate={};
+    for(let i=0;i<7;i++){
+      const d=new Date();d.setDate(d.getDate()-6+i);
+      byDate[ymdLocal(d)]={cal:0,protein:0,carbs:0,fat:0,fiber:0,meals:[],healthScores:[]};
+    }
+    weekMeals.forEach(m=>{
+      const d=m.date||(m.timestamp?ymdLocal(new Date(m.timestamp)):null);
+      if(!byDate[d])return;
+      byDate[d].cal+=Number(m.totalCalories)||0;
+      byDate[d].protein+=Number(m.protein)||0;
+      byDate[d].carbs+=Number(m.carbs)||0;
+      byDate[d].fat+=Number(m.fat)||0;
+      byDate[d].fiber+=Number(m.fiber)||0;
+      byDate[d].meals.push(m);
+      if(m.healthScore)byDate[d].healthScores.push(m.healthScore);
+    });
+    const days=Object.entries(byDate).map(([date,v])=>({date,...v,avgScore:v.healthScores.length?v.healthScores.reduce((a,b)=>a+b,0)/v.healthScores.length:0}));
+    const daysWithData=days.filter(d=>d.cal>0);
+    const avgCal=daysWithData.length?Math.round(daysWithData.reduce((s,d)=>s+d.cal,0)/daysWithData.length):0;
+    const onTarget=days.filter(d=>d.cal>0&&d.cal>=goal*0.8&&d.cal<=goal*1.1).length;
+    // Best day — closest to goal with highest avg health score
+    const bestDay=daysWithData.slice().sort((a,b)=>{
+      const aScore=(a.avgScore||0)*10-Math.abs(a.cal-goal)/100;
+      const bScore=(b.avgScore||0)*10-Math.abs(b.cal-goal)/100;
+      return bScore-aScore;
+    })[0]||null;
+    // Top meals
+    const counts={};
+    weekMeals.forEach(m=>{const k=m.foodName||"Unknown";if(!counts[k])counts[k]={count:0,total:0};counts[k].count++;counts[k].total+=(m.totalCalories||0);});
+    const topMeals=Object.entries(counts).map(([name,v])=>({name,count:v.count,avg:Math.round(v.total/v.count)})).sort((a,b)=>b.count-a.count).slice(0,3);
+    const allScores=weekMeals.map(m=>m.healthScore||0).filter(s=>s>0);
+    const avgHealthScore=allScores.length?(allScores.reduce((a,b)=>a+b,0)/allScores.length).toFixed(1):"—";
+    // Range label
+    const rangeLabel=`${startDate.toLocaleDateString("en",{month:"short",day:"numeric"})} - ${now.toLocaleDateString("en",{month:"short",day:"numeric"})}`;
+    return{startDate,endDate:now,rangeLabel,weekMeals,days,daysWithData,avgCal,onTarget,bestDay,topMeals,avgHealthScore,totalProtein:Math.round(weekMeals.reduce((s,m)=>s+(m.protein||0),0)),totalCarbs:Math.round(weekMeals.reduce((s,m)=>s+(m.carbs||0),0)),totalFat:Math.round(weekMeals.reduce((s,m)=>s+(m.fat||0),0)),totalFiber:Math.round(weekMeals.reduce((s,m)=>s+(m.fiber||0),0))};
+  },[allHistory,goal]);
+
+  // ── Share weekly summary ──
+  const shareWeek=async()=>{
+    const w=weeklyWrap;
+    const text=`🎯 My week with Bitelyze:\n🔥 ${stats.streak} day streak\n📊 ${w.avgCal} kcal avg/day\n⭐ ${w.avgHealthScore}/10 avg health score\n✅ ${w.onTarget}/7 days on target\n\nTrack yours at bitelyze.com`;
+    if(navigator.share){
+      try{await navigator.share({title:"My week with Bitelyze",text,url:"https://bitelyze.com"});return;}catch(e){if(e.name==="AbortError")return;}
+    }
+    try{await navigator.clipboard.writeText(text);setToast("Copied to clipboard — paste anywhere");}
+    catch(e){setToast("Copy failed");}
+  };
 
   useEffect(()=>{if(!uid)return;
     // Phase 1 — INSTANT load from localStorage (sync, no network wait)
@@ -1706,6 +1906,71 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
     {/* ── Toast Notification ── */}
     {toast&&(<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:`linear-gradient(135deg,${T.accent},#00b87a)`,color:"#000",padding:"12px 24px",borderRadius:16,fontSize:14,fontWeight:700,zIndex:9999,animation:"slideUp .3s ease forwards",boxShadow:`0 8px 32px ${T.accentGlow}`,maxWidth:"90%",textAlign:"center"}}>{toast}</div>)}
 
+    {/* ── Shareable Week Card Modal ── */}
+    {showShareCard&&(<>
+      <div onClick={()=>setShowShareCard(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:5000,animation:"fadeIn .2s ease",backdropFilter:"blur(6px)"}}/>
+      <div style={{position:"fixed",inset:0,zIndex:5001,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px",pointerEvents:"none"}}>
+        <div style={{maxWidth:400,width:"100%",pointerEvents:"auto",animation:"slideUp .35s cubic-bezier(0.34,1.56,0.64,1)"}}>
+          {/* The shareable card */}
+          <div style={{background:"linear-gradient(160deg,#0a0f1c 0%,#0f1829 50%,#0a1a1f 100%)",borderRadius:24,padding:"28px 24px",position:"relative",overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,229,160,0.2)",aspectRatio:"9/16",display:"flex",flexDirection:"column"}}>
+            {/* Mint gradient accent blob */}
+            <div style={{position:"absolute",top:-40,right:-40,width:200,height:200,borderRadius:"50%",background:"radial-gradient(circle,rgba(0,229,160,0.3) 0%,transparent 70%)",pointerEvents:"none"}}/>
+            <div style={{position:"absolute",bottom:-60,left:-40,width:240,height:240,borderRadius:"50%",background:"radial-gradient(circle,rgba(0,229,160,0.15) 0%,transparent 70%)",pointerEvents:"none"}}/>
+
+            {/* Close button */}
+            <button onClick={()=>setShowShareCard(false)} style={{position:"absolute",top:12,right:12,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",color:"#fff",borderRadius:"50%",width:32,height:32,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:3,fontFamily:"inherit"}}><X size={16}/></button>
+
+            {/* Top: Logo + tagline */}
+            <div style={{position:"relative",zIndex:2,display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+              <div style={{width:36,height:36,borderRadius:11,background:"linear-gradient(135deg,#00e5a0,#00b87a)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,229,160,0.35)"}}><UtensilsCrossed size={18} color="#000"/></div>
+              <span style={{fontSize:15,fontWeight:800,color:"#fff",letterSpacing:"-0.01em"}}>Bitelyze</span>
+            </div>
+            <p style={{position:"relative",zIndex:2,fontSize:13,color:"#9aa3b4",fontWeight:500,marginBottom:20}}>My week with Bitelyze</p>
+
+            {/* Center big number: streak */}
+            <div style={{position:"relative",zIndex:2,flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center"}}>
+              <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(255,107,53,0.15)",border:"1px solid rgba(255,107,53,0.4)",borderRadius:99,padding:"6px 14px",marginBottom:16}}>
+                <Flame size={14} color="#ff6b35"/>
+                <span style={{fontSize:12,fontWeight:700,color:"#ff6b35"}}>{stats.streak}-day streak</span>
+              </div>
+              <p style={{fontSize:64,fontWeight:900,color:"#00e5a0",letterSpacing:"-0.03em",lineHeight:1,marginBottom:8,textShadow:"0 0 40px rgba(0,229,160,0.5)"}}>{weeklyWrap.weekMeals.length}</p>
+              <p style={{fontSize:15,color:"#fff",fontWeight:700,marginBottom:2}}>meals logged</p>
+              <p style={{fontSize:12,color:"#9aa3b4"}}>this week</p>
+
+              {/* Stats grid */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:24,width:"100%"}}>
+                <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:12,padding:"12px",textAlign:"center"}}>
+                  <p style={{fontSize:18,fontWeight:900,color:"#fff",lineHeight:1}}>{weeklyWrap.avgCal.toLocaleString()}</p>
+                  <p style={{fontSize:10,color:"#9aa3b4",marginTop:4,fontWeight:500}}>avg kcal/day</p>
+                </div>
+                <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:12,padding:"12px",textAlign:"center"}}>
+                  <p style={{fontSize:18,fontWeight:900,color:"#00e5a0",lineHeight:1}}>{weeklyWrap.avgHealthScore}<span style={{fontSize:11,color:"#9aa3b4"}}>/10</span></p>
+                  <p style={{fontSize:10,color:"#9aa3b4",marginTop:4,fontWeight:500}}>health score</p>
+                </div>
+                <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:12,padding:"12px",textAlign:"center",gridColumn:"1 / span 2"}}>
+                  <p style={{fontSize:18,fontWeight:900,color:"#fff",lineHeight:1}}>{weeklyWrap.onTarget}<span style={{color:"#9aa3b4",fontSize:13}}>/7</span></p>
+                  <p style={{fontSize:10,color:"#9aa3b4",marginTop:4,fontWeight:500}}>days on target</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom tagline */}
+            <p style={{position:"relative",zIndex:2,fontSize:11,color:"#6b7384",textAlign:"center",marginTop:16,fontWeight:500}}>Track yours at bitelyze.com</p>
+          </div>
+
+          {/* Action buttons */}
+          <div style={{display:"flex",gap:10,marginTop:14}}>
+            <button onClick={shareWeek} style={{flex:1,padding:"14px",borderRadius:14,border:"none",background:T.accent,color:"#000",fontWeight:800,cursor:"pointer",fontFamily:"inherit",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:`0 4px 16px ${T.accentGlow}`}}><Share2 size={16}/> Share</button>
+            <button onClick={async()=>{
+              const w=weeklyWrap;
+              const text=`🎯 My week with Bitelyze:\n🔥 ${stats.streak} day streak\n📊 ${w.avgCal} kcal avg/day\n⭐ ${w.avgHealthScore}/10 avg health score\n✅ ${w.onTarget}/7 days on target\n\nTrack yours at bitelyze.com`;
+              try{await navigator.clipboard.writeText(text);setToast("Copied to clipboard");}catch(e){setToast("Copy failed");}
+            }} style={{padding:"14px 18px",borderRadius:14,border:`1.5px solid ${T.border}`,background:T.card,color:T.text,fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Copy size={16}/> Copy</button>
+          </div>
+        </div>
+      </div>
+    </>)}
+
     {/* ── Premium Frosted Header ── */}
     <div style={{padding:"calc(14px + env(safe-area-inset-top)) 18px 0",background:T.headerBg,borderBottom:`1px solid ${T.border}`,position:"sticky",top:0,zIndex:10,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)"}}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
@@ -1799,7 +2064,18 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
           <img src={image} alt="food" style={{width:"100%",borderRadius:18,maxHeight:240,objectFit:"cover",border:`1px solid ${T.border}`,boxShadow:"0 8px 32px rgba(0,0,0,0.3)"}}/>
           <button onClick={()=>{setImage(null);setImgB64(null);setResult(null);}} style={{position:"absolute",top:12,right:12,background:"rgba(0,0,0,0.6)",backdropFilter:"blur(8px)",border:`1px solid ${T.border}`,color:"#fff",borderRadius:10,padding:"6px 12px",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:600,display:"inline-flex",alignItems:"center"}}><X size={14}/></button>
         </div>)}
-        {!image&&(<input ref={textInputRef} style={{width:"100%",padding:"14px 16px",background:T.inputBg,border:`1.5px solid ${T.border}`,borderRadius:14,color:T.text,fontSize:14,outline:"none",marginBottom:12,fontFamily:"inherit",transition:"border-color .2s",boxShadow:"inset 0 2px 4px rgba(0,0,0,0.2)"}} placeholder={placeholders[placeholderIdx]} value={textFood} onChange={e=>setTextFood(e.target.value)} onKeyDown={e=>e.key==="Enter"&&analyze()} onFocus={e=>e.target.style.borderColor=T.accent+"60"} onBlur={e=>e.target.style.borderColor=T.border}/>)}
+        {!image&&(<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+          <input ref={textInputRef} style={{flex:1,padding:"14px 16px",background:T.inputBg,border:`1.5px solid ${T.border}`,borderRadius:14,color:T.text,fontSize:14,outline:"none",fontFamily:"inherit",transition:"border-color .2s",boxShadow:"inset 0 2px 4px rgba(0,0,0,0.2)"}} placeholder={isRecording?"Listening...":placeholders[placeholderIdx]} value={textFood} onChange={e=>setTextFood(e.target.value)} onKeyDown={e=>e.key==="Enter"&&analyze()} onFocus={e=>e.target.style.borderColor=T.accent+"60"} onBlur={e=>e.target.style.borderColor=T.border}/>
+          {voiceSupported&&(<button
+            onMouseDown={(e)=>{e.preventDefault();startVoice();}}
+            onMouseUp={()=>isRecording&&stopVoice()}
+            onMouseLeave={()=>isRecording&&stopVoice()}
+            onTouchStart={(e)=>{e.preventDefault();startVoice();}}
+            onTouchEnd={(e)=>{e.preventDefault();stopVoice();}}
+            title={isRecording?"Release to stop":"Hold to record"}
+            style={{width:46,height:46,borderRadius:"50%",border:`1.5px solid ${isRecording?T.danger:T.border}`,background:isRecording?`${T.danger}15`:T.inputBg,color:isRecording?T.danger:T.accent,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s",boxShadow:isRecording?`0 0 0 4px ${T.danger}25, 0 0 16px ${T.danger}40`:"inset 0 2px 4px rgba(0,0,0,0.15)",animation:isRecording?"pulseGlow 1.2s ease-in-out infinite":"none"}}
+          >{isRecording?<Mic size={18}/>:<Mic size={18}/>}</button>)}
+        </div>)}
         {remaining<=0?(<div style={{background:`${T.orange}08`,border:`1px solid ${T.orange}30`,borderRadius:16,padding:"20px 18px",textAlign:"center",marginBottom:12}}>
           <p style={{fontSize:28,marginBottom:8}}>⏳</p>
           <p style={{fontSize:15,fontWeight:800,color:T.orange,marginBottom:6}}>Daily limit reached</p>
@@ -2341,6 +2617,19 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
           </div>
         </div>
 
+        {/* Notification permission prompt — shows once user has 3+ meals and hasn't decided */}
+        {typeof Notification!=="undefined"&&notifPermission==='default'&&!notifBannerDismissed&&allHistory.length>3&&(<div style={{background:`${T.accent}10`,border:`1.5px solid ${T.accent}35`,borderRadius:16,padding:"16px 18px",marginBottom:18,position:"relative",boxShadow:T.cardShadow||"none"}}>
+          <button onClick={dismissNotifBanner} style={{position:"absolute",top:10,right:10,background:"none",border:"none",color:T.muted,cursor:"pointer",padding:4,display:"flex",fontFamily:"inherit"}}><X size={14}/></button>
+          <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:12}}>
+            <div style={{width:40,height:40,borderRadius:12,background:`${T.accent}20`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Bell size={20} color={T.accent}/></div>
+            <div style={{flex:1,paddingRight:20}}>
+              <p style={{fontSize:14,fontWeight:800,color:T.text,marginBottom:3}}>Never miss a meal</p>
+              <p style={{fontSize:12,color:T.muted,lineHeight:1.45}}>Get gentle reminders to log meals and protect your streak.</p>
+            </div>
+          </div>
+          <button onClick={requestNotifPermission} style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"none",background:T.accent,color:"#000",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Bell size={14}/> Enable Notifications</button>
+        </div>)}
+
         {/* Menu groups */}
         {[
           {title:"Account",items:[
@@ -2350,6 +2639,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
           {title:"Features",items:[
             {icon:<MessageCircle size={18} color={T.accent}/>,label:"Chat with Bitelyze Coach",onClick:()=>setCoachOpen(true)},
             {icon:<BarChart3 size={18} color={T.accent}/>,label:"Progress & Analytics",onClick:()=>setTab("progress")},
+            {icon:<Calendar size={18} color={T.accent}/>,label:"Weekly Wrap-Up",onClick:()=>setMoreView("weeklywrap")},
             {icon:<HelpCircle size={18} color={T.accent}/>,label:"View Tour Again",onClick:()=>setShowTour(true)},
           ]},
           {title:"Data & Sync",items:[
@@ -2371,6 +2661,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
           ]},
           {title:"App",items:[
             {icon:<Palette size={18} color={T.accent}/>,label:"Appearance",detail:theme==="dark"?"Dark":"Light",onClick:()=>setMoreView("appearance")},
+            {icon:<Bell size={18} color={T.accent}/>,label:"Notifications",detail:notifPermission==='granted'&&localStorage.getItem('bitelyze_notif_enabled')==='1'?"On":notifPermission==='denied'?"Blocked":"Off",onClick:()=>setMoreView("notifications")},
             {icon:<Smartphone size={18} color={T.accent}/>,label:"Add to Home Screen",onClick:()=>setMoreView("homescreen")},
           ]}
         ].map((group,gi)=>(<div key={gi} style={{marginBottom:18}}>
@@ -2457,6 +2748,145 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
           <Sparkles size={16} color={T.accent} style={{flexShrink:0,marginTop:2}}/>
           <p style={{fontSize:12,color:T.muted,lineHeight:1.55}}>Once installed, Bitelyze launches fullscreen without the browser bar — just like a native app.</p>
         </div>
+      </>)}
+
+      {/* ── Weekly Wrap-Up sub-view ── */}
+      {tab==="me"&&moreView==="weeklywrap"&&(<>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,paddingTop:4}}>
+          <button onClick={()=>setMoreView(null)} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><ArrowLeft size={18}/></button>
+          <h2 style={{fontSize:20,fontWeight:800,color:T.text}}>Your Week</h2>
+        </div>
+        <p style={{fontSize:13,color:T.muted,marginBottom:16,paddingLeft:2}}>{weeklyWrap.rangeLabel}</p>
+
+        {weeklyWrap.weekMeals.length===0?(<div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:"40px 20px",textAlign:"center",boxShadow:T.cardShadow||"none"}}>
+          <div style={{width:56,height:56,borderRadius:16,background:`${T.accent}10`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}><Calendar size={28} color={T.accent}/></div>
+          <p style={{fontSize:15,fontWeight:800,marginBottom:6,color:T.text}}>No meals logged this week yet</p>
+          <p style={{fontSize:13,color:T.muted,lineHeight:1.5}}>Log a few meals and check back — your weekly recap appears here.</p>
+        </div>):(<>
+          {/* Big stat card */}
+          <div style={{background:`linear-gradient(135deg,${T.accent}15,${T.accent}05)`,border:`1px solid ${T.accent}30`,borderRadius:18,padding:"20px 18px",marginBottom:12,boxShadow:T.cardShadow||"none"}}>
+            <p style={{fontSize:11,color:T.muted,fontWeight:700,textTransform:"uppercase",letterSpacing:".8px",marginBottom:6}}>Average per day</p>
+            <p style={{fontSize:32,fontWeight:900,color:T.accent,letterSpacing:"-0.02em",lineHeight:1,marginBottom:6}}>{weeklyWrap.avgCal.toLocaleString()} <span style={{fontSize:14,color:T.muted,fontWeight:600}}>kcal</span></p>
+            <p style={{fontSize:13,color:T.text,fontWeight:600}}><span style={{color:T.accent,fontWeight:800}}>{weeklyWrap.onTarget}/7</span> days on target</p>
+          </div>
+
+          {/* Streak card */}
+          <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:"16px 18px",marginBottom:12,display:"flex",alignItems:"center",gap:14,boxShadow:T.cardShadow||"none"}}>
+            <div style={{width:46,height:46,borderRadius:14,background:`${T.orange}15`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Flame size={22} color={T.orange}/></div>
+            <div style={{flex:1}}>
+              <p style={{fontSize:20,fontWeight:900,color:T.orange,lineHeight:1,letterSpacing:"-0.01em"}}>{stats.streak} day{stats.streak===1?"":"s"}</p>
+              <p style={{fontSize:12,color:T.muted,marginTop:3}}>Current streak</p>
+            </div>
+          </div>
+
+          {/* Best day */}
+          {weeklyWrap.bestDay&&(<div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:"16px 18px",marginBottom:12,boxShadow:T.cardShadow||"none"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+              <Trophy size={16} color={T.accent}/>
+              <p style={{fontSize:12,color:T.accent,fontWeight:800,textTransform:"uppercase",letterSpacing:".5px"}}>Your best day</p>
+            </div>
+            <p style={{fontSize:15,fontWeight:800,color:T.text,marginBottom:4}}>{(()=>{try{return parseYMD(weeklyWrap.bestDay.date).toLocaleDateString("en",{weekday:"long",month:"short",day:"numeric"});}catch(e){return weeklyWrap.bestDay.date;}})()}</p>
+            <p style={{fontSize:13,color:T.muted,lineHeight:1.5}}>{weeklyWrap.bestDay.cal.toLocaleString()} kcal · {weeklyWrap.bestDay.meals.length} meal{weeklyWrap.bestDay.meals.length===1?"":"s"} · health score {weeklyWrap.bestDay.avgScore.toFixed(1)}/10</p>
+          </div>)}
+
+          {/* Health score + days tracked */}
+          <div style={{display:"flex",gap:10,marginBottom:12}}>
+            <div style={{flex:1,background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"14px",textAlign:"center",boxShadow:T.cardShadow||"none"}}>
+              <Sparkles size={18} color={T.accent} style={{marginBottom:6}}/>
+              <p style={{fontSize:20,fontWeight:900,color:T.accent,lineHeight:1}}>{weeklyWrap.avgHealthScore}<span style={{fontSize:12,color:T.muted}}>/10</span></p>
+              <p style={{fontSize:11,color:T.muted,marginTop:4,fontWeight:500}}>Avg health score</p>
+            </div>
+            <div style={{flex:1,background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"14px",textAlign:"center",boxShadow:T.cardShadow||"none"}}>
+              <UtensilsCrossed size={18} color={T.blue} style={{marginBottom:6}}/>
+              <p style={{fontSize:20,fontWeight:900,color:T.blue,lineHeight:1}}>{weeklyWrap.weekMeals.length}</p>
+              <p style={{fontSize:11,color:T.muted,marginTop:4,fontWeight:500}}>Meals logged</p>
+            </div>
+          </div>
+
+          {/* Top 3 meals */}
+          {weeklyWrap.topMeals.length>0&&(<div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:"16px 18px",marginBottom:12,boxShadow:T.cardShadow||"none"}}>
+            <p style={{fontSize:12,color:T.muted,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",marginBottom:12}}>Top meals</p>
+            {weeklyWrap.topMeals.map((m,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:i<weeklyWrap.topMeals.length-1?`1px solid ${T.border}`:"none"}}>
+              <div style={{width:26,height:26,borderRadius:8,background:`${T.accent}15`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:T.accent,flexShrink:0}}>{i+1}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <p style={{fontSize:13.5,fontWeight:700,color:T.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.name}</p>
+                <p style={{fontSize:11,color:T.muted}}>{m.count}× · ~{m.avg} kcal</p>
+              </div>
+            </div>))}
+          </div>)}
+
+          {/* Macros breakdown */}
+          {(()=>{const p=weeklyWrap.totalProtein,c=weeklyWrap.totalCarbs,f=weeklyWrap.totalFat;const totalG=p+c+f;if(totalG===0)return null;const pPct=(p/totalG)*100,cPct=(c/totalG)*100,fPct=(f/totalG)*100;return(<div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:"16px 18px",marginBottom:14,boxShadow:T.cardShadow||"none"}}>
+            <p style={{fontSize:12,color:T.muted,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",marginBottom:12}}>Macros this week</p>
+            <div style={{display:"flex",height:10,borderRadius:6,overflow:"hidden",marginBottom:12,background:T.inputBg}}>
+              <div style={{width:`${pPct}%`,background:T.blue}}/>
+              <div style={{width:`${cPct}%`,background:T.orange}}/>
+              <div style={{width:`${fPct}%`,background:T.accent}}/>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,fontSize:12}}>
+              {[["Protein",p,"g",T.blue],["Carbs",c,"g",T.orange],["Fat",f,"g",T.accent],["Fiber",weeklyWrap.totalFiber,"g",T.purple||T.muted]].map(([l,v,u,col])=>(<div key={l} style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{width:8,height:8,borderRadius:2,background:col,flexShrink:0}}/>
+                <span style={{color:T.muted,fontWeight:500}}>{l}</span>
+                <span style={{marginLeft:"auto",fontWeight:700,color:T.text}}>{v}{u}</span>
+              </div>))}
+            </div>
+          </div>);})()}
+
+          {/* Share Week button */}
+          <button onClick={()=>setShowShareCard(true)} className="ripple" style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:T.accent,color:"#000",fontWeight:800,cursor:"pointer",fontFamily:"inherit",fontSize:14,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:`0 4px 16px ${T.accentGlow}`}}><Share2 size={16}/> Share Week</button>
+        </>)}
+      </>)}
+
+      {/* ── Notifications sub-view ── */}
+      {tab==="me"&&moreView==="notifications"&&(<>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20,paddingTop:4}}>
+          <button onClick={()=>setMoreView(null)} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><ArrowLeft size={18}/></button>
+          <h2 style={{fontSize:20,fontWeight:800,color:T.text}}>Notifications</h2>
+        </div>
+        <p style={{fontSize:13,color:T.muted,marginBottom:18,paddingLeft:2,lineHeight:1.5}}>Gentle reminders to help you log meals and protect your streak.</p>
+
+        {(()=>{
+          const supported=typeof Notification!=="undefined";
+          if(!supported)return(<div style={{background:`${T.orange}08`,border:`1px solid ${T.orange}30`,borderRadius:14,padding:"14px 16px",color:T.orange,fontSize:13,display:"flex",alignItems:"center",gap:10}}><AlertTriangle size={16}/> Notifications aren't supported in this browser.</div>);
+          const enabled=notifPermission==='granted'&&localStorage.getItem('bitelyze_notif_enabled')==='1';
+          const statusLabel=notifPermission==='denied'?"Blocked (change in browser settings)":notifPermission==='granted'?(enabled?"Enabled":"Paused"):"Not enabled";
+          const statusColor=notifPermission==='denied'?T.danger:enabled?T.accent:T.muted;
+          return(<>
+            <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:"16px 18px",marginBottom:12,boxShadow:T.cardShadow||"none"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+                <div style={{width:40,height:40,borderRadius:12,background:`${T.accent}15`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Bell size={20} color={T.accent}/></div>
+                <div style={{flex:1}}>
+                  <p style={{fontSize:14,fontWeight:800,color:T.text}}>Meal reminders</p>
+                  <p style={{fontSize:12,color:statusColor,fontWeight:600,marginTop:2}}>{statusLabel}</p>
+                </div>
+                {notifPermission!=='denied'&&(<button onClick={toggleNotifEnabled} style={{width:44,height:26,borderRadius:99,border:"none",background:enabled?T.accent:T.border,cursor:"pointer",position:"relative",transition:"background .2s",fontFamily:"inherit"}}>
+                  <span style={{position:"absolute",top:2,left:enabled?22:2,width:22,height:22,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
+                </button>)}
+              </div>
+              {notifPermission==='default'&&(<button onClick={requestNotifPermission} style={{width:"100%",padding:"10px",borderRadius:10,border:"none",background:T.accent,color:"#000",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Enable Notifications</button>)}
+            </div>
+
+            <p style={{fontSize:11,color:T.muted,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",marginBottom:8,paddingLeft:4,marginTop:16}}>What you'll get</p>
+            <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden",boxShadow:T.cardShadow||"none"}}>
+              {[
+                {icon:<Sun size={18} color={T.orange}/>,title:"Morning nudge",desc:"8–11am, if you haven't logged breakfast"},
+                {icon:<UtensilsCrossed size={18} color={T.blue}/>,title:"Dinner check-in",desc:"6–9pm, with calories remaining today"},
+                {icon:<Flame size={18} color={T.danger}/>,title:"Streak rescue",desc:"9–11pm, if your streak is at risk"}
+              ].map((item,i,a)=>(<div key={i} style={{padding:"12px 16px",borderBottom:i<a.length-1?`1px solid ${T.border}`:"none",display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:32,height:32,borderRadius:10,background:`${T.accent}08`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{item.icon}</div>
+                <div style={{flex:1}}>
+                  <p style={{fontSize:13.5,fontWeight:700,color:T.text}}>{item.title}</p>
+                  <p style={{fontSize:11.5,color:T.muted,marginTop:2}}>{item.desc}</p>
+                </div>
+              </div>))}
+            </div>
+
+            {notifPermission==='denied'&&(<div style={{background:`${T.orange}08`,border:`1px solid ${T.orange}30`,borderRadius:12,padding:"12px 14px",marginTop:14,display:"flex",alignItems:"flex-start",gap:10}}>
+              <Info size={16} color={T.orange} style={{flexShrink:0,marginTop:2}}/>
+              <p style={{fontSize:12,color:T.muted,lineHeight:1.55}}>Notifications are blocked. To enable, open your browser's site settings for bitelyze.com and allow notifications.</p>
+            </div>)}
+          </>);
+        })()}
       </>)}
 
       {/* ── My Profile sub-view (existing Me content) ── */}
