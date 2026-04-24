@@ -75,20 +75,23 @@ async function identifyFoodFromImage(content, apiKey) {
   try {
     const identifyPrompt = [...content.filter(c => c.type === "image"), {
       type: "text",
-      text: `Identify EVERY food and drink in this image with maximum specificity. Apply this priority order:
+      text: `Identify the foods in this image. Output a comma-separated list of SHORT food names.
 
-1. RECOGNIZE BRANDS / RESTAURANTS first if visible (e.g. "Big Mac", "Chick-fil-A sandwich", "Starbucks Frappuccino")
-2. RECOGNIZE REGIONAL DISHES by their proper name (e.g. "jollof rice with chicken", "pad thai", "chicken tikka masala", "fufu and egusi soup", "ramen tonkotsu")
-3. For generic items, include cooking method + key descriptors (e.g. "pan-fried chicken thigh with skin", "white basmati rice", "steamed broccoli florets")
+STRICT RULES:
+- Max 5 words per item (not counting the parenthesized portion)
+- Use the dish's proper name: "Big Mac", "jollof rice", "pad thai", "egusi soup", "chicken tikka masala", "pounded yam"
+- Portion (if visible) goes in parentheses: "jollof rice (1.5 cups)"
+- NO color, container, texture, shape, or spatial descriptions
+- NO hedging words: "likely", "possibly", "approximately", "appears to be"
+- NO descriptive clauses with "with", "in", "on" — unless they're part of the dish name (e.g. "chicken tikka masala with naan" → just "chicken tikka masala, naan")
 
-For each item, also note approximate portion if visible (e.g. "2 slices", "1 cup", "8 oz").
+Output ONLY the list. Nothing else.
 
-Return ONLY a comma-separated list. NO other text, no markdown.
-
-Examples:
-- "Big Mac, large fries, medium Coke"
-- "jollof rice (1.5 cups), grilled chicken thigh, fried plantains (4 slices)"
-- "chicken caesar salad with parmesan and croutons, garlic bread (2 slices)"`
+GOOD: "jollof rice (1.5 cups), grilled chicken thigh, fried plantains (4 slices)"
+GOOD: "egusi soup (2 cups), pounded yam (1 cup)"
+GOOD: "Big Mac, large fries, medium Coke"
+BAD:  "Nigerian chicken curry/stew with bone-in chicken pieces in orange-red tomato sauce (approximately 3-4 pieces in clear yellow container, ~2 cups)"
+BAD:  "round swallow (likely pounded yam or eba/garri) wrapped in plastic bag"`
     }];
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -158,11 +161,21 @@ export default async function handler(req, res) {
     }
 
     if (foodQuery) {
-      // Clean queries — remove portion text in parens to improve USDA hit rate
-      const cleanFood = (s) => s.replace(/\([^)]*\)/g, "").replace(/\d+\s*(slices?|cups?|oz|g|ml|pieces?|tbsp|tsp)/gi, "").trim();
-      const foods = foodQuery.split(",").map(f => cleanFood(f)).filter(Boolean);
+      // Strip parenthesized content FIRST so commas inside parens don't break splitting,
+      // then clean portion units and drop junk fragments.
+      const withoutParens = foodQuery.replace(/\([^)]*\)/g, "");
+      const cleanFood = (s) => s
+        .replace(/\d+\s*(slices?|cups?|oz|g|ml|pieces?|tbsp|tsp)/gi, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      const foods = withoutParens
+        .split(",")
+        .map(f => cleanFood(f))
+        .map(f => f.split(/\s+/).slice(0, 4).join(" "))
+        .filter(f => f.length >= 3 && /[a-z]/i.test(f))
+        .slice(0, 5);
       const allResults = [];
-      for (const food of foods.slice(0, 5)) {
+      for (const food of foods) {
         const results = await searchUSDA(food);
         if (results && results.length > 0) {
           allResults.push({ query: food, matches: results });
