@@ -1387,7 +1387,6 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
       setMoreView("weeklywrap");
       localStorage.setItem(lastShownKey,sundayKey);
     }catch(e){}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   },[uid,allHistory.length]);
 
   // ── Client-side notification scheduler: checks on app open ──
@@ -1423,7 +1422,6 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
       }
     }catch(e){}
     // Runs once on mount — reminders are idempotent per (day, slot)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
   // ── Request notification permission ──
