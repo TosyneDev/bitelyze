@@ -8,7 +8,7 @@ import {
 import {
   initializeFirestore, doc, setDoc, getDoc, arrayUnion
 } from "firebase/firestore";
-import { Camera, ClipboardList, BarChart3, User, Flame, Target, Zap, UtensilsCrossed, Brain, Droplets, Trophy, Heart, ArrowLeft, ArrowRight, Upload, Search, Settings, LogOut, ChevronRight, ChevronLeft, Lock, Unlock, HelpCircle, Plus, Minus, X, Star, Activity, Scale, Ruler, Calendar, Sun, Moon, Check, ChevronUp, ChevronDown, RotateCcw, Trash2, Share2, Download, FlaskConical, Clock, Pencil, AlertTriangle, Info, Rocket, Dumbbell, Sprout, Sofa, Footprints, TrendingUp, TrendingDown, Lightbulb, Sparkles, Stethoscope, Repeat, MessageCircle, Send } from "lucide-react";
+import { Camera, ClipboardList, BarChart3, User, Flame, Target, Zap, UtensilsCrossed, Brain, Droplets, Trophy, Heart, ArrowLeft, ArrowRight, Upload, Search, Settings, LogOut, ChevronRight, ChevronLeft, Lock, Unlock, HelpCircle, Plus, Minus, X, Star, Activity, Scale, Ruler, Calendar, Sun, Moon, Check, ChevronUp, ChevronDown, RotateCcw, Trash2, Share2, Download, FlaskConical, Clock, Pencil, AlertTriangle, Info, Rocket, Dumbbell, Sprout, Sofa, Footprints, TrendingUp, TrendingDown, Lightbulb, Sparkles, Stethoscope, Repeat, MessageCircle, Send, MoreHorizontal, Palette, Smartphone, Share, ArrowUpRight, Apple } from "lucide-react";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBdin15LOt0vwN3H1EXAnFox2Zyjek5J4Y",
@@ -1153,6 +1153,7 @@ function CoachChat({open,onClose,profile,goal,consumed,todayMeals,allHistory,uid
 function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}){
   const[tab,setTab]=useState("analyze");
   const[coachOpen,setCoachOpen]=useState(false);
+  const[moreView,setMoreView]=useState(null);// null=menu, "profile"|"appearance"|"homescreen"
   const[showTour,setShowTour]=useState(()=>{try{return!localStorage.getItem(`bitelyze_tour_v1_${uid}`);}catch(e){return false;}});
   const[condensedStepIdx,setCondensedStepIdx]=useState(null);// null=closed, 0..N=current question, "done"=success
   const[reminderDismissed,setReminderDismissed]=useState(()=>{
@@ -1646,7 +1647,6 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
         <div className="logo-pulse" style={{width:42,height:42,borderRadius:14,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:`0 4px 16px ${T.accentGlow}`,flexShrink:0}}><UtensilsCrossed size={20}/></div>
         <span style={{fontSize:16,fontWeight:800,color:T.text,flex:1}}>Bitelyze</span>
         <div style={{display:"flex",alignItems:"center",gap:6,background:`${T.orange}10`,border:`1px solid ${T.orange}35`,borderRadius:24,padding:"5px 12px",boxShadow:`0 0 16px ${T.orange}15`,flexShrink:0}}><Flame size={14}/><span className="bounce-pop" style={{fontSize:13,fontWeight:900,color:T.orange}}>{stats.streak}d</span></div>
-        <button onClick={()=>setCoachOpen(true)} aria-label="Open Bitelyze Coach" style={{background:`${T.accent}12`,border:`1px solid ${T.accent}40`,color:T.accent,borderRadius:10,padding:"7px 10px",cursor:"pointer",fontFamily:"inherit",transition:"all .3s",flexShrink:0,display:"flex",alignItems:"center"}}><Brain size={16}/></button>
         <button onClick={toggleTheme} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"7px 10px",cursor:"pointer",fontFamily:"inherit",transition:"all .3s",flexShrink:0,display:"flex",alignItems:"center"}}>{theme==="dark"?<Sun size={16}/>:<Moon size={16}/>}</button>
       </div>
       {/* Slim calorie progress bar */}
@@ -2256,7 +2256,147 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
         </>);
       })()}
 
-      {tab==="me"&&(<>
+      {tab==="me"&&moreView===null&&(<>
+        {/* ── MORE Menu — main list view ── */}
+        {/* Compact profile summary at top */}
+        <div style={{display:"flex",alignItems:"center",gap:14,padding:"10px 4px 20px",marginBottom:6}}>
+          <div style={{width:56,height:56,borderRadius:18,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 16px ${T.accentGlow}`,flexShrink:0}}>
+            <User size={26} color="#000"/>
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <p style={{fontSize:18,fontWeight:900,color:T.text,letterSpacing:"-0.01em",marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{profile.name||"User"}</p>
+            <p style={{fontSize:12,color:T.muted,fontWeight:500,display:"flex",alignItems:"center",gap:8}}>
+              <span style={{display:"inline-flex",alignItems:"center",gap:3,color:T.orange,fontWeight:700}}><Flame size={11}/>{stats.streak}d</span>
+              <span>·</span>
+              <span>{goal} kcal/day</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Menu groups */}
+        {[
+          {title:"Account",items:[
+            {icon:<User size={18} color={T.accent}/>,label:"My Profile",onClick:()=>setMoreView("profile")},
+            {icon:<Target size={18} color={T.accent}/>,label:"Edit Goals",onClick:onEditProfile},
+          ]},
+          {title:"Features",items:[
+            {icon:<MessageCircle size={18} color={T.accent}/>,label:"Chat with Bitelyze Coach",onClick:()=>setCoachOpen(true)},
+            {icon:<BarChart3 size={18} color={T.accent}/>,label:"Progress & Analytics",onClick:()=>setTab("progress")},
+            {icon:<HelpCircle size={18} color={T.accent}/>,label:"View Tour Again",onClick:()=>setShowTour(true)},
+          ]},
+          {title:"Data & Sync",items:[
+            {icon:<RotateCcw size={18} color={T.accent}/>,label:"Sync from Cloud",onClick:async()=>{
+              setToast("Syncing from cloud...");
+              try{
+                const[prof,hist,days]=await Promise.all([
+                  getDoc(doc(db,"users",uid,"data","profile")).catch(()=>null),
+                  getDoc(doc(db,"users",uid,"data","history")).catch(()=>null),
+                  loadRecentDays(uid,14).catch(()=>null)
+                ]);
+                let count=0;
+                if(prof&&prof.exists&&prof.exists()){const p=prof.data();LS.set(`profile_${uid}`,p);count++;}
+                if(hist&&hist.exists&&hist.exists()){const m=hist.data().meals||[];LS.set(`history_${uid}`,m);setAllHistory(m);count++;}
+                if(days){setRecentDays(days);count++;}
+                setToast(count>0?`✓ Synced ${count} item${count>1?"s":""}`:"Already up to date");
+              }catch(e){setToast("Sync failed — check connection");}
+            }},
+          ]},
+          {title:"App",items:[
+            {icon:<Palette size={18} color={T.accent}/>,label:"Appearance",detail:theme==="dark"?"Dark":"Light",onClick:()=>setMoreView("appearance")},
+            {icon:<Smartphone size={18} color={T.accent}/>,label:"Add to Home Screen",onClick:()=>setMoreView("homescreen")},
+          ]}
+        ].map((group,gi)=>(<div key={gi} style={{marginBottom:18}}>
+          <p style={{fontSize:11,fontWeight:700,color:T.muted,textTransform:"uppercase",letterSpacing:".8px",marginBottom:8,paddingLeft:4}}>{group.title}</p>
+          <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden",boxShadow:T.cardShadow||"none"}}>
+            {group.items.map((item,ii)=>(<button key={ii} onClick={item.onClick} style={{width:"100%",padding:"14px 16px",background:"transparent",border:"none",borderBottom:ii<group.items.length-1?`1px solid ${T.border}`:"none",color:T.text,fontFamily:"inherit",fontSize:14,fontWeight:500,cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left",transition:"background .15s"}}>
+              <span style={{width:32,height:32,borderRadius:10,background:`${T.accent}10`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{item.icon}</span>
+              <span style={{flex:1}}>{item.label}</span>
+              {item.detail&&<span style={{fontSize:12,color:T.muted,fontWeight:500}}>{item.detail}</span>}
+              <ChevronRight size={16} color={T.muted}/>
+            </button>))}
+          </div>
+        </div>))}
+
+        {/* Sign Out — separate, visually distinct */}
+        <button onClick={onSignOut} className="ripple" style={{width:"100%",padding:"14px",borderRadius:14,border:`1px solid ${T.danger}25`,background:`${T.danger}08`,color:T.danger,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:14,marginTop:6,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><LogOut size={14}/> Sign Out</button>
+      </>)}
+
+      {/* ── Appearance sub-view ── */}
+      {tab==="me"&&moreView==="appearance"&&(<>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20,paddingTop:4}}>
+          <button onClick={()=>setMoreView(null)} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><ArrowLeft size={18}/></button>
+          <h2 style={{fontSize:20,fontWeight:800,color:T.text}}>Appearance</h2>
+        </div>
+        <p style={{fontSize:13,color:T.muted,marginBottom:18,paddingLeft:2}}>Choose how Bitelyze looks.</p>
+        {[
+          {id:"dark",label:"Dark",desc:"Classic dark theme",icon:<Moon size={20} color={T.accent}/>},
+          {id:"light",label:"Light",desc:"Bright and clean",icon:<Sun size={20} color={T.accent}/>}
+        ].map(opt=>{const on=theme===opt.id;return(<button key={opt.id} onClick={()=>{if(theme!==opt.id)toggleTheme();}} style={{width:"100%",padding:"16px",borderRadius:14,border:`1.5px solid ${on?T.accent:T.border}`,background:on?`${T.accent}10`:T.card,color:T.text,fontFamily:"inherit",cursor:"pointer",marginBottom:10,display:"flex",alignItems:"center",gap:14,textAlign:"left"}}>
+          <span style={{width:44,height:44,borderRadius:12,background:`${T.accent}10`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{opt.icon}</span>
+          <div style={{flex:1}}>
+            <p style={{fontSize:15,fontWeight:700,color:on?T.accent:T.text,marginBottom:2}}>{opt.label}</p>
+            <p style={{fontSize:12,color:T.muted}}>{opt.desc}</p>
+          </div>
+          {on&&<Check size={20} color={T.accent}/>}
+        </button>);})}
+      </>)}
+
+      {/* ── Add to Home Screen guide sub-view ── */}
+      {tab==="me"&&moreView==="homescreen"&&(<>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20,paddingTop:4}}>
+          <button onClick={()=>setMoreView(null)} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><ArrowLeft size={18}/></button>
+          <h2 style={{fontSize:20,fontWeight:800,color:T.text}}>Add to Home Screen</h2>
+        </div>
+        <p style={{fontSize:13,color:T.muted,marginBottom:20,paddingLeft:2,lineHeight:1.5}}>Install Bitelyze like a native app — launches fullscreen, with its own icon.</p>
+
+        {/* iOS Guide */}
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:"18px",marginBottom:12,boxShadow:T.cardShadow||"none"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+            <Apple size={22} color={T.accent}/>
+            <p style={{fontSize:16,fontWeight:800,color:T.text}}>iPhone / iPad (Safari)</p>
+          </div>
+          {[
+            "Open bitelyze.com in Safari (not Chrome — iOS only installs from Safari).",
+            <span>Tap the <strong>Share</strong> button at the bottom of the screen <Share size={14} style={{display:"inline",verticalAlign:"middle"}}/></span>,
+            <span>Scroll down and tap <strong>Add to Home Screen</strong></span>,
+            <span>Tap <strong>Add</strong> in the top right</span>,
+            "The Bitelyze icon will appear on your Home Screen — tap it to launch fullscreen!"
+          ].map((step,i)=>(<div key={i} style={{display:"flex",gap:12,marginBottom:i<4?12:0,alignItems:"flex-start"}}>
+            <div style={{width:24,height:24,borderRadius:"50%",background:`${T.accent}15`,border:`1px solid ${T.accent}40`,color:T.accent,fontSize:12,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{i+1}</div>
+            <p style={{fontSize:13.5,color:T.text,lineHeight:1.55}}>{step}</p>
+          </div>))}
+        </div>
+
+        {/* Android Guide */}
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:"18px",marginBottom:12,boxShadow:T.cardShadow||"none"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+            <Smartphone size={22} color={T.accent}/>
+            <p style={{fontSize:16,fontWeight:800,color:T.text}}>Android (Chrome)</p>
+          </div>
+          {[
+            "Open bitelyze.com in Chrome.",
+            <span>Tap the <strong>three dots menu</strong> (⋮) in the top right</span>,
+            <span>Tap <strong>Install app</strong> or <strong>Add to Home screen</strong></span>,
+            <span>Tap <strong>Install</strong> to confirm</span>,
+            "Bitelyze will appear on your home screen and app drawer!"
+          ].map((step,i)=>(<div key={i} style={{display:"flex",gap:12,marginBottom:i<4?12:0,alignItems:"flex-start"}}>
+            <div style={{width:24,height:24,borderRadius:"50%",background:`${T.accent}15`,border:`1px solid ${T.accent}40`,color:T.accent,fontSize:12,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{i+1}</div>
+            <p style={{fontSize:13.5,color:T.text,lineHeight:1.55}}>{step}</p>
+          </div>))}
+        </div>
+
+        <div style={{background:`${T.accent}08`,border:`1px solid ${T.accent}30`,borderRadius:12,padding:"12px 14px",marginTop:10,display:"flex",alignItems:"flex-start",gap:10}}>
+          <Sparkles size={16} color={T.accent} style={{flexShrink:0,marginTop:2}}/>
+          <p style={{fontSize:12,color:T.muted,lineHeight:1.55}}>Once installed, Bitelyze launches fullscreen without the browser bar — just like a native app.</p>
+        </div>
+      </>)}
+
+      {/* ── My Profile sub-view (existing Me content) ── */}
+      {tab==="me"&&moreView==="profile"&&(<>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,paddingTop:4}}>
+          <button onClick={()=>setMoreView(null)} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><ArrowLeft size={18}/></button>
+          <h2 style={{fontSize:20,fontWeight:800,color:T.text}}>My Profile</h2>
+        </div>
         {/* Profile Completion Reminder (if any optional steps skipped) */}
         {(()=>{
           const skipped=["blockers","habits","planningHabit","motivation"].filter(k=>profile[k]===null);
@@ -2313,23 +2453,6 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
         <Card><CardTitle icon={<User size={16} color={T.accent}/>}>My Profile</CardTitle>{[["Height",`${profile.height} cm`],["Weight",`${profile.weight} kg`],["Target Weight",profile.targetWeight?`${profile.targetWeight} kg`:"Not set"],["Daily Goal",`${goal} kcal`],["Activity",profile.activity?.replace("_"," ")],["Goal",profile.goal?.replace("_"," ")]].map(([k,v],i,a)=>(<div key={k} style={{display:"flex",justifyContent:"space-between",padding:"11px 0",borderBottom:i<a.length-1?`1px solid ${T.border}`:"none",fontSize:13}}><span style={{color:T.muted,fontWeight:500}}>{k}</span><span style={{fontWeight:700,color:T.blue,textTransform:"capitalize"}}>{v}</span></div>))}</Card>
         {/* Actions */}
         <button onClick={onEditProfile} className="ripple" style={{width:"100%",padding:"14px",borderRadius:14,border:`1px solid ${T.border}`,background:T.inputBg,color:T.text,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:14,marginBottom:10,transition:"all .2s",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.03)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Pencil size={14}/> Edit Profile</button>
-        <button onClick={()=>setShowTour(true)} className="ripple" style={{width:"100%",padding:"14px",borderRadius:14,border:`1px solid ${T.border}`,background:T.inputBg,color:T.text,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:14,marginBottom:10,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><HelpCircle size={14}/> View Tour Again</button>
-        <button onClick={async()=>{
-          setToast("Syncing from cloud...");
-          try{
-            const[prof,hist,days]=await Promise.all([
-              getDoc(doc(db,"users",uid,"data","profile")).catch(()=>null),
-              getDoc(doc(db,"users",uid,"data","history")).catch(()=>null),
-              loadRecentDays(uid,14).catch(()=>null)
-            ]);
-            let count=0;
-            if(prof&&prof.exists&&prof.exists()){const p=prof.data();LS.set(`profile_${uid}`,p);count++;}
-            if(hist&&hist.exists&&hist.exists()){const m=hist.data().meals||[];LS.set(`history_${uid}`,m);setAllHistory(m);count++;}
-            if(days){setRecentDays(days);count++;}
-            setToast(count>0?`✓ Synced ${count} item${count>1?"s":""} from cloud`:"Nothing new to sync");
-          }catch(e){setToast("Sync failed — check connection");}
-        }} className="ripple" style={{width:"100%",padding:"14px",borderRadius:14,border:`1px solid ${T.accent}30`,background:`${T.accent}10`,color:T.accent,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:14,marginBottom:10,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><RotateCcw size={14}/> Sync from Cloud</button>
-        <button onClick={onSignOut} className="ripple" style={{width:"100%",padding:"14px",borderRadius:14,border:`1px solid ${T.danger}20`,background:`${T.danger}08`,color:T.danger,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:14,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><LogOut size={14}/> Sign Out</button>
       </>)}
     </div>
 
@@ -2337,7 +2460,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
     {!coachOpen&&<div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:1000,background:theme==="dark"?"rgba(8,8,14,0.94)":"rgba(245,245,248,0.96)",backdropFilter:"blur(24px)",WebkitBackdropFilter:"blur(24px)",borderTop:`1px solid ${T.border}`,paddingBottom:"env(safe-area-inset-bottom)",boxShadow:theme==="dark"?"0 -4px 24px rgba(0,0,0,0.4)":"0 -4px 24px rgba(0,0,0,0.08)"}}>
       <div style={{display:"flex",maxWidth:480,margin:"0 auto",position:"relative",padding:"6px 12px"}}>
         <div style={{position:"absolute",top:6,left:`calc(${activeTabIdx*25}% + 16px)`,width:"calc(25% - 20px)",height:"calc(100% - 12px)",background:`linear-gradient(135deg,${T.accent}18,${T.accent}08)`,borderRadius:12,transition:"left .3s cubic-bezier(0.16,1,0.3,1)",boxShadow:`0 0 12px ${T.accent}15,inset 0 1px 0 rgba(255,255,255,0.04)`,pointerEvents:"none"}}/>
-        {[["analyze",<Camera size={20}/>,"Analyze"],["log",<ClipboardList size={20}/>,"Log"],["progress",<BarChart3 size={20}/>,"Progress"],["me",<User size={20}/>,"Me"]].map(([k,ic,lb])=>(<button key={k} onClick={()=>setTab(k)} style={{flex:1,padding:"8px 4px",border:"none",background:"transparent",color:tab===k?T.accent:T.muted,fontWeight:700,cursor:"pointer",borderRadius:12,transition:"all .25s cubic-bezier(0.16,1,0.3,1)",fontFamily:"inherit",position:"relative",zIndex:1,opacity:tab===k?1:0.5,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+        {[["analyze",<Camera size={20}/>,"Analyze"],["log",<ClipboardList size={20}/>,"Log"],["progress",<BarChart3 size={20}/>,"Progress"],["me",<MoreHorizontal size={20}/>,"More"]].map(([k,ic,lb])=>(<button key={k} onClick={()=>setTab(k)} style={{flex:1,padding:"8px 4px",border:"none",background:"transparent",color:tab===k?T.accent:T.muted,fontWeight:700,cursor:"pointer",borderRadius:12,transition:"all .25s cubic-bezier(0.16,1,0.3,1)",fontFamily:"inherit",position:"relative",zIndex:1,opacity:tab===k?1:0.5,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
           <span style={{display:"inline-block"}}>{ic}</span>
           <span style={{fontSize:10,fontWeight:700,color:tab===k?T.accent:T.muted}}>{lb}</span>
         </button>))}
