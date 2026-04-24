@@ -2630,6 +2630,9 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
 
         {/* Menu groups */}
         {[
+          {title:"Community",items:[
+            {icon:<Flame size={18} color={T.orange}/>,label:"Join the Insiders 🔥",detail:"WhatsApp",onClick:()=>window.open("https://chat.whatsapp.com/Hki0wdepcyh3Wn4QwNCVc3","_blank","noopener,noreferrer")},
+          ]},
           {title:"Account",items:[
             {icon:<User size={18} color={T.accent}/>,label:"My Profile",onClick:()=>setMoreView("profile")},
             {icon:<Target size={18} color={T.accent}/>,label:"Edit Goals",onClick:onEditProfile},
