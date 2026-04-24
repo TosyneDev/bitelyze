@@ -1102,7 +1102,7 @@ function CoachChat({open,onClose,profile,goal,consumed,todayMeals,allHistory,uid
   };
 
   if(!open)return null;
-  return(<div style={{position:"fixed",inset:0,zIndex:2000,background:T.bg,display:"flex",flexDirection:"column",animation:"fadeIn .25s ease"}}>
+  return(<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,height:"100dvh",zIndex:2000,background:T.bg,display:"flex",flexDirection:"column",animation:"fadeIn .25s ease"}}>
     {/* Header */}
     <div style={{padding:"calc(14px + env(safe-area-inset-top)) 18px 14px",background:T.headerBg,borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:12,backdropFilter:"blur(20px)"}}>
       <div style={{width:40,height:40,borderRadius:12,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 16px ${T.accentGlow}`}}><Brain size={20} color="#000"/></div>
@@ -2321,8 +2321,8 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
       </>)}
     </div>
 
-    {/* ── Fixed Bottom Tab Bar ── Always pinned to viewport bottom */}
-    <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:1000,background:theme==="dark"?"rgba(8,8,14,0.94)":"rgba(245,245,248,0.96)",backdropFilter:"blur(24px)",WebkitBackdropFilter:"blur(24px)",borderTop:`1px solid ${T.border}`,paddingBottom:"env(safe-area-inset-bottom)",boxShadow:theme==="dark"?"0 -4px 24px rgba(0,0,0,0.4)":"0 -4px 24px rgba(0,0,0,0.08)"}}>
+    {/* ── Fixed Bottom Tab Bar ── Hidden when coach chat is open */}
+    {!coachOpen&&<div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:1000,background:theme==="dark"?"rgba(8,8,14,0.94)":"rgba(245,245,248,0.96)",backdropFilter:"blur(24px)",WebkitBackdropFilter:"blur(24px)",borderTop:`1px solid ${T.border}`,paddingBottom:"env(safe-area-inset-bottom)",boxShadow:theme==="dark"?"0 -4px 24px rgba(0,0,0,0.4)":"0 -4px 24px rgba(0,0,0,0.08)"}}>
       <div style={{display:"flex",maxWidth:480,margin:"0 auto",position:"relative",padding:"6px 12px"}}>
         <div style={{position:"absolute",top:6,left:`calc(${activeTabIdx*25}% + 16px)`,width:"calc(25% - 20px)",height:"calc(100% - 12px)",background:`linear-gradient(135deg,${T.accent}18,${T.accent}08)`,borderRadius:12,transition:"left .3s cubic-bezier(0.16,1,0.3,1)",boxShadow:`0 0 12px ${T.accent}15,inset 0 1px 0 rgba(255,255,255,0.04)`,pointerEvents:"none"}}/>
         {[["analyze",<Camera size={20}/>,"Analyze"],["log",<ClipboardList size={20}/>,"Log"],["progress",<BarChart3 size={20}/>,"Progress"],["me",<User size={20}/>,"Me"]].map(([k,ic,lb])=>(<button key={k} onClick={()=>setTab(k)} style={{flex:1,padding:"8px 4px",border:"none",background:"transparent",color:tab===k?T.accent:T.muted,fontWeight:700,cursor:"pointer",borderRadius:12,transition:"all .25s cubic-bezier(0.16,1,0.3,1)",fontFamily:"inherit",position:"relative",zIndex:1,opacity:tab===k?1:0.5,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
@@ -2330,7 +2330,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
           <span style={{fontSize:10,fontWeight:700,color:tab===k?T.accent:T.muted}}>{lb}</span>
         </button>))}
       </div>
-    </div>
+    </div>}
   </div>);}
 
 // Route helpers
