@@ -1053,6 +1053,15 @@ function CoachChat({open,onClose,profile,goal,consumed,todayMeals,allHistory,uid
     }
   },[open]);
 
+  // Lock body scroll when coach is open so keyboard doesn't push layout
+  useEffect(()=>{
+    if(open){
+      const prev=document.body.style.overflow;
+      document.body.style.overflow="hidden";
+      return()=>{document.body.style.overflow=prev;};
+    }
+  },[open]);
+
   // Build recent summary for context (last 7 days)
   const recentSummary=useMemo(()=>{
     if(!allHistory||allHistory.length===0)return null;
@@ -1126,9 +1135,16 @@ function CoachChat({open,onClose,profile,goal,consumed,todayMeals,allHistory,uid
       {err&&<p style={{textAlign:"center",fontSize:12,color:T.danger,padding:"10px"}}>{err}</p>}
     </div>
 
+    {/* Quick action chips — shown when input is empty and no recent user message */}
+    {input.trim()===""&&messages.filter(m=>m.role==="user").length<2&&<div style={{padding:"4px 14px 0",background:T.card,display:"flex",gap:7,overflowX:"auto",scrollbarWidth:"none",flexShrink:0}}>
+      {["What should I eat?","Can I have pizza tonight?","How am I doing this week?","I need motivation"].map(q=>(
+        <button key={q} onClick={()=>setInput(q)} style={{padding:"7px 12px",borderRadius:99,border:`1px solid ${T.border}`,background:T.inputBg,color:T.muted,fontSize:12,fontWeight:500,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>{q}</button>
+      ))}
+    </div>}
+
     {/* Input */}
-    <div style={{padding:"12px 14px calc(12px + env(safe-area-inset-bottom))",borderTop:`1px solid ${T.border}`,background:T.card,display:"flex",gap:8,alignItems:"flex-end"}}>
-      <textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}} placeholder="Ask your coach anything..." rows={1} style={{flex:1,padding:"11px 14px",background:T.inputBg,border:`1px solid ${T.border}`,borderRadius:14,color:T.text,fontSize:14,outline:"none",fontFamily:"inherit",resize:"none",maxHeight:100,lineHeight:1.4}}/>
+    <div style={{padding:"12px 14px calc(12px + env(safe-area-inset-bottom))",borderTop:`1px solid ${T.border}`,background:T.card,display:"flex",gap:8,alignItems:"flex-end",flexShrink:0}}>
+      <textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}} placeholder="Ask your coach anything..." rows={1} style={{flex:1,padding:"11px 14px",background:T.inputBg,border:`1px solid ${T.border}`,borderRadius:14,color:T.text,fontSize:16,outline:"none",fontFamily:"inherit",resize:"none",maxHeight:100,lineHeight:1.4}}/>
       <button onClick={send} disabled={!input.trim()||sending} style={{width:44,height:44,borderRadius:12,border:"none",background:input.trim()&&!sending?T.accent:T.inputBg,color:input.trim()&&!sending?"#000":T.muted,cursor:input.trim()&&!sending?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s",flexShrink:0}}><Send size={18}/></button>
     </div>
   </div>);
@@ -1618,11 +1634,6 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
       </div>);
     })()}
 
-    {/* ── Floating Coach Button — visible on all tabs ── */}
-    {!coachOpen&&<button onClick={()=>setCoachOpen(true)} style={{position:"fixed",bottom:"calc(90px + env(safe-area-inset-bottom))",right:16,zIndex:900,width:56,height:56,borderRadius:"50%",border:"none",background:`linear-gradient(135deg,${T.accent},#00b87a)`,color:"#000",cursor:"pointer",boxShadow:`0 4px 24px ${T.accentGlow}, 0 0 0 2px ${T.bg}`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",animation:"pulseGlow 3s ease-in-out infinite"}} aria-label="Open Coach Chat">
-      <Brain size={24}/>
-    </button>}
-
     {/* ── Coach Chat ── */}
     <CoachChat open={coachOpen} onClose={()=>setCoachOpen(false)} profile={profile} goal={goal} consumed={consumed} todayMeals={mealLog} allHistory={allHistory} uid={uid}/>
 
@@ -1635,6 +1646,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
         <div className="logo-pulse" style={{width:42,height:42,borderRadius:14,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:`0 4px 16px ${T.accentGlow}`,flexShrink:0}}><UtensilsCrossed size={20}/></div>
         <span style={{fontSize:16,fontWeight:800,color:T.text,flex:1}}>Bitelyze</span>
         <div style={{display:"flex",alignItems:"center",gap:6,background:`${T.orange}10`,border:`1px solid ${T.orange}35`,borderRadius:24,padding:"5px 12px",boxShadow:`0 0 16px ${T.orange}15`,flexShrink:0}}><Flame size={14}/><span className="bounce-pop" style={{fontSize:13,fontWeight:900,color:T.orange}}>{stats.streak}d</span></div>
+        <button onClick={()=>setCoachOpen(true)} aria-label="Open Bitelyze Coach" style={{background:`${T.accent}12`,border:`1px solid ${T.accent}40`,color:T.accent,borderRadius:10,padding:"7px 10px",cursor:"pointer",fontFamily:"inherit",transition:"all .3s",flexShrink:0,display:"flex",alignItems:"center"}}><Brain size={16}/></button>
         <button onClick={toggleTheme} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"7px 10px",cursor:"pointer",fontFamily:"inherit",transition:"all .3s",flexShrink:0,display:"flex",alignItems:"center"}}>{theme==="dark"?<Sun size={16}/>:<Moon size={16}/>}</button>
       </div>
       {/* Slim calorie progress bar */}
