@@ -32,9 +32,15 @@ async function searchUSDA(query) {
   try {
     const url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${USDA_KEY}&query=${encodeURIComponent(query)}&pageSize=3&dataType=Survey (FNDDS),SR Legacy`;
     const res = await fetch(url);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.log(`[analyze] USDA ${res.status} for "${query}"`);
+      return null;
+    }
     const data = await res.json();
-    if (!data.foods || data.foods.length === 0) return null;
+    if (!data.foods || data.foods.length === 0) {
+      console.log(`[analyze] USDA 0 hits for "${query}"`);
+      return null;
+    }
 
     // Extract the top result's nutrient data
     const results = data.foods.slice(0, 3).map(food => {
@@ -99,12 +105,18 @@ Examples:
       }),
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      console.log(`[analyze] identify failed: HTTP ${res.status} ${errText.slice(0, 200)}`);
+      return null;
+    }
     const data = await res.json();
     const text = data.content?.map(i => i.text || "").join("") || "";
-    return text.trim();
+    const trimmed = text.trim();
+    console.log(`[analyze] identified: "${trimmed}"`);
+    return trimmed;
   } catch (e) {
-    console.log("Food identification error:", e.message);
+    console.log("[analyze] identify error:", e.message);
     return null;
   }
 }
@@ -135,9 +147,16 @@ export default async function handler(req, res) {
     let foodQuery = foodText || null;
     const isImage = Array.isArray(content) && content.some(c => c.type === "image");
 
-    // For text input: USDA lookup helps since we know exactly what user typed
-    // For images: skip pre-identification — Opus 4.7 vision handles this in one pass
-    // (Avoids "hint pollution" where a wrong first-pass ID biases the final analysis)
+    console.log(`[analyze] incoming: isImage=${isImage}, foodText="${foodText || ""}"`);
+
+    // For images: ask Sonnet 4.6 to identify foods first, then ground in USDA data.
+    // The final Opus 4.7 analysis treats USDA entries as reference only, so a wrong
+    // first-pass ID can't override what Opus actually sees.
+    if (isImage && !foodQuery) {
+      const identified = await identifyFoodFromImage(content, apiKey);
+      if (identified) foodQuery = identified;
+    }
+
     if (foodQuery) {
       // Clean queries — remove portion text in parens to improve USDA hit rate
       const cleanFood = (s) => s.replace(/\([^)]*\)/g, "").replace(/\d+\s*(slices?|cups?|oz|g|ml|pieces?|tbsp|tsp)/gi, "").trim();
@@ -152,6 +171,11 @@ export default async function handler(req, res) {
       if (allResults.length > 0) {
         usdaData = allResults;
       }
+      const summary = allResults.map(r => {
+        const top = r.matches[0];
+        return `${r.query} -> ${top?.name} (${top?.nutrients?.calories ?? "?"}kcal/100g)`;
+      }).join("; ");
+      console.log(`[analyze] USDA matched ${allResults.length}/${foods.length}: ${summary}`);
     }
 
     // Step 3: Build the enhanced prompt with USDA data
@@ -249,10 +273,14 @@ Return ONLY valid JSON. No markdown, no backticks.
 
 Context: Analyzing for ${profileStr}. User has eaten ${consumed}kcal of their ${dailyGoal}kcal goal so far today.`;
 
+    const usdaReferenceNote = isImage
+      ? "USDA nutritional reference data for foods pre-identified from this image by a quick first-pass model. The pre-identification may be wrong. ONLY use these values if they match what you ACTUALLY see. If any pre-identified item isn't in the image, or if you identify the dish differently, ignore that USDA entry and use your own vision-based estimate. Do NOT let the pre-identification override what you see. Scale values to the portion you actually see (USDA values are per 100g unless serving size specified)."
+      : "REAL nutritional reference data from the USDA database for the identified foods. Use this as your primary source for calorie and macro values; scale to the estimated portion size. USDA values are per 100g unless serving size specified.";
+
     const usdaAddendum = usdaData ? `
 
 ━━━ USDA REFERENCE DATA ━━━
-Here is REAL nutritional reference data from the USDA database for the identified foods. Use this as your primary source for calorie and macro values; scale to the estimated portion size. USDA values are per 100g unless serving size specified.
+${usdaReferenceNote}
 ${JSON.stringify(usdaData, null, 2)}` : "";
 
     if (isImage) {
@@ -294,6 +322,18 @@ If you see a specific dish you recognize (Big Mac, jollof rice, pad thai, etc.),
     // Add metadata about data source
     if (data.content) {
       data._source = usdaData ? "usda+claude" : "claude";
+    }
+
+    if (!response.ok) {
+      console.log(`[analyze] ${analysisModel} HTTP ${response.status}:`, JSON.stringify(data).slice(0, 400));
+    } else {
+      try {
+        const raw = data.content?.map(i => i.text || "").join("") || "";
+        const parsed = JSON.parse(raw);
+        console.log(`[analyze] ${analysisModel} -> "${parsed.foodName}" ${parsed.totalCalories}kcal (confidence=${parsed.confidence}${parsed.confidenceNote ? `: ${parsed.confidenceNote}` : ""}) source=${data._source}`);
+      } catch (e) {
+        console.log(`[analyze] ${analysisModel} returned unparseable JSON:`, (data.content?.[0]?.text || "").slice(0, 200));
+      }
     }
 
     return res.status(response.status).json(data);
