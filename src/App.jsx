@@ -8,7 +8,7 @@ import {
 import {
   initializeFirestore, doc, setDoc, getDoc, arrayUnion
 } from "firebase/firestore";
-import { Camera, ClipboardList, BarChart3, User, Flame, Target, Zap, UtensilsCrossed, Brain, Droplets, Trophy, Heart, ArrowLeft, ArrowRight, Upload, Search, Settings, LogOut, ChevronRight, ChevronLeft, Lock, Unlock, HelpCircle, Plus, Minus, X, Star, Activity, Scale, Ruler, Calendar, Sun, Moon, Check, ChevronUp, ChevronDown, RotateCcw, Trash2, Share2, Download, FlaskConical, Clock, Pencil, AlertTriangle, Info, Rocket, Dumbbell, Sprout, Sofa, Footprints, TrendingUp, TrendingDown, Lightbulb, Sparkles, Stethoscope, Repeat, MessageCircle, Send, MoreHorizontal, Palette, Smartphone, Share, ArrowUpRight, Apple } from "lucide-react";
+import { Camera, ClipboardList, BarChart3, User, Flame, Target, Zap, UtensilsCrossed, Brain, Droplets, Trophy, Heart, ArrowLeft, ArrowRight, Upload, Search, Settings, LogOut, ChevronRight, ChevronLeft, Lock, Unlock, HelpCircle, Plus, Minus, X, Star, Activity, Scale, Ruler, Calendar, Sun, Moon, Check, ChevronUp, ChevronDown, RotateCcw, Trash2, Share2, Download, FlaskConical, Clock, Pencil, AlertTriangle, Info, Rocket, Dumbbell, Sprout, Sofa, Footprints, TrendingUp, TrendingDown, Lightbulb, Sparkles, Stethoscope, Repeat, MessageCircle, Send, MoreHorizontal, Palette, Smartphone, Share, ArrowUpRight, Apple, Bell, BellOff } from "lucide-react";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBdin15LOt0vwN3H1EXAnFox2Zyjek5J4Y",
@@ -335,24 +335,42 @@ const loadRecentDays=async(uid,n=14)=>{
 };
 
 // Calculate real streak from day data
+// Local YMD helper — uses local timezone, matches meal.date format
+const ymdLocal=(d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+
+// Streak derived from allHistory directly — no race conditions, no timezone issues
+const calcStreakFromHistory=(allHistory)=>{
+  if(!Array.isArray(allHistory)||allHistory.length===0)return 0;
+  const activeDates=new Set();
+  allHistory.forEach(m=>{
+    const d=m.date||(m.timestamp?ymdLocal(new Date(m.timestamp)):null);
+    if(d)activeDates.add(d);
+  });
+  let streak=0;
+  const today=new Date();
+  for(let i=0;i<365;i++){
+    const d=new Date(today);d.setDate(d.getDate()-i);
+    const key=ymdLocal(d);
+    if(activeDates.has(key)){streak++;}
+    else if(i===0){continue;}// grace period for today
+    else{break;}
+  }
+  return streak;
+};
+
+// Legacy wrapper — kept for backward compat with day-docs-based callers
 const calcStreak=(daysMap)=>{
   if(!daysMap)return 0;
   let streak=0;
   const today=new Date();
   for(let i=0;i<365;i++){
-    const d=new Date(today);
-    d.setDate(d.getDate()-i);
+    const d=new Date(today);d.setDate(d.getDate()-i);
     const key=d.toISOString().split("T")[0];
     const day=daysMap[key];
     const hasData=day&&((day.meals&&day.meals.length>0)||(day.consumed&&day.consumed>0));
-    if(hasData){
-      streak++;
-    }else if(i===0){
-      // Today might not have meals yet — don't break the streak, check yesterday
-      continue;
-    }else{
-      break;
-    }
+    if(hasData)streak++;
+    else if(i===0)continue;
+    else break;
   }
   return streak;
 };
@@ -1154,6 +1172,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
   const[tab,setTab]=useState("analyze");
   const[coachOpen,setCoachOpen]=useState(false);
   const[moreView,setMoreView]=useState(null);// null=menu, "profile"|"appearance"|"homescreen"
+  const[notifOpen,setNotifOpen]=useState(false);
   const[showTour,setShowTour]=useState(()=>{try{return!localStorage.getItem(`bitelyze_tour_v1_${uid}`);}catch(e){return false;}});
   const[condensedStepIdx,setCondensedStepIdx]=useState(null);// null=closed, 0..N=current question, "done"=success
   const[reminderDismissed,setReminderDismissed]=useState(()=>{
@@ -1206,10 +1225,13 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
   const recentDaysRef=useRef({});
   useEffect(()=>{
     recentDaysRef.current=recentDays;
-    // Recompute streak whenever recentDays changes (e.g. Firestore load completes)
-    const realStreak=calcStreak(recentDays);
-    setStats(s=>s.streak!==realStreak?{...s,streak:realStreak}:s);
   },[recentDays]);
+
+  // Streak derived from allHistory — single source of truth, runs on every history change
+  useEffect(()=>{
+    const realStreak=calcStreakFromHistory(allHistory);
+    setStats(s=>s.streak!==realStreak?{...s,streak:realStreak}:s);
+  },[allHistory]);
   const[toast,setToast]=useState(null);
   const[tipCardIdx,setTipCardIdx]=useState(0);
   const[placeholderIdx,setPlaceholderIdx]=useState(0);
@@ -1572,6 +1594,23 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
   const cm=coachMsg();
   // Smart coach insights from actual data
   const smartInsights=useMemo(()=>computeSmartCoach({allHistory,recentDays,goal,profile,consumed,todayMeals:mealLog}),[allHistory,recentDays,goal,profile.name,consumed,mealLog]);
+  // Notifications — generated from recent activity, achievements, patterns
+  const notifications=useMemo(()=>{
+    const list=[];
+    const now=Date.now();
+    // Streak milestones
+    if(stats.streak>=7)list.push({id:"streak7",icon:<Flame size={18} color={T.orange}/>,title:"Week Warrior",msg:`You've logged ${stats.streak} days in a row. Incredible consistency!`,time:"Today"});
+    else if(stats.streak>=3)list.push({id:"streak3",icon:<Flame size={18} color={T.orange}/>,title:"Building a habit",msg:`${stats.streak} days in a row — you're on your way!`,time:"Today"});
+    // Badge unlocks (from live badge stats later — simplified here)
+    if(allHistory.length===1)list.push({id:"first_meal",icon:<UtensilsCrossed size={18} color={T.accent}/>,title:"First Bite 🎉",msg:"You logged your first meal. Welcome aboard!",time:"Today"});
+    else if(allHistory.length===10)list.push({id:"meals10",icon:<Trophy size={18} color={T.purple}/>,title:"10 Meals Logged",msg:"You've tracked 10 meals. Keep it up!",time:"Today"});
+    // Today's progress
+    if(consumed>0&&consumed>=goal*0.9&&consumed<=goal*1.05)list.push({id:"near_goal",icon:<Target size={18} color={T.accent}/>,title:"On target today",msg:`You've hit ${Math.round((consumed/goal)*100)}% of your goal. Nice pacing!`,time:"Today"});
+    // Coach tip of the day
+    if(consumed===0&&new Date().getHours()>=10)list.push({id:"log_nudge",icon:<Lightbulb size={18} color={T.accent}/>,title:"Log your first meal",msg:"Even a small breakfast now sets the tone for the whole day.",time:"Today"});
+    return list;
+  },[stats.streak,allHistory.length,consumed,goal]);
+
   // Live badge stats — derived from real data so badges unlock immediately
   const liveBadgeStats=useMemo(()=>{
     const daysUnderGoal=Object.values(recentDays||{}).filter(d=>d&&d.consumed>0&&d.consumed<=goal).length;
@@ -1635,6 +1674,32 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
       </div>);
     })()}
 
+    {/* ── Notifications Panel ── */}
+    {notifOpen&&<div onClick={()=>setNotifOpen(false)} style={{position:"fixed",inset:0,zIndex:1500,background:"rgba(0,0,0,0.5)",backdropFilter:"blur(6px)",WebkitBackdropFilter:"blur(6px)",display:"flex",justifyContent:"center",alignItems:"flex-start",paddingTop:"calc(72px + env(safe-area-inset-top))",animation:"fadeIn .2s ease"}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:"calc(100% - 24px)",maxWidth:440,maxHeight:"70vh",background:T.card,border:`1px solid ${T.border}`,borderRadius:18,overflow:"hidden",boxShadow:`0 20px 60px rgba(0,0,0,0.4)`,animation:"slideUp .25s ease",display:"flex",flexDirection:"column"}}>
+        <div style={{padding:"16px 18px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <p style={{fontSize:16,fontWeight:800,color:T.text,display:"flex",alignItems:"center",gap:8}}><Bell size={16} color={T.accent}/> Notifications</p>
+          <button onClick={()=>setNotifOpen(false)} style={{background:"none",border:"none",color:T.muted,cursor:"pointer",display:"flex",alignItems:"center",padding:0}}><X size={18}/></button>
+        </div>
+        <div style={{overflowY:"auto",flex:1}}>
+          {notifications.length===0?(<div style={{padding:"36px 20px",textAlign:"center"}}>
+            <BellOff size={32} color={T.muted} style={{marginBottom:10,opacity:0.5}}/>
+            <p style={{fontSize:14,fontWeight:600,color:T.text,marginBottom:4}}>No new notifications</p>
+            <p style={{fontSize:12,color:T.muted,lineHeight:1.5}}>Keep logging — achievements, milestones and coach nudges will show up here.</p>
+          </div>):notifications.map((n,i)=>(<div key={n.id} style={{padding:"14px 18px",borderBottom:i<notifications.length-1?`1px solid ${T.border}`:"none",display:"flex",gap:12,alignItems:"flex-start"}}>
+            <span style={{width:36,height:36,borderRadius:12,background:`${T.accent}10`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{n.icon}</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:3,gap:8}}>
+                <p style={{fontSize:14,fontWeight:700,color:T.text}}>{n.title}</p>
+                <p style={{fontSize:10,color:T.muted,flexShrink:0}}>{n.time}</p>
+              </div>
+              <p style={{fontSize:12.5,color:T.muted,lineHeight:1.5}}>{n.msg}</p>
+            </div>
+          </div>))}
+        </div>
+      </div>
+    </div>}
+
     {/* ── Coach Chat ── */}
     <CoachChat open={coachOpen} onClose={()=>setCoachOpen(false)} profile={profile} goal={goal} consumed={consumed} todayMeals={mealLog} allHistory={allHistory} uid={uid}/>
 
@@ -1647,7 +1712,10 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
         <div className="logo-pulse" style={{width:42,height:42,borderRadius:14,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:`0 4px 16px ${T.accentGlow}`,flexShrink:0}}><UtensilsCrossed size={20}/></div>
         <span style={{fontSize:16,fontWeight:800,color:T.text,flex:1}}>Bitelyze</span>
         <div style={{display:"flex",alignItems:"center",gap:6,background:`${T.orange}10`,border:`1px solid ${T.orange}35`,borderRadius:24,padding:"5px 12px",boxShadow:`0 0 16px ${T.orange}15`,flexShrink:0}}><Flame size={14}/><span className="bounce-pop" style={{fontSize:13,fontWeight:900,color:T.orange}}>{stats.streak}d</span></div>
-        <button onClick={toggleTheme} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"7px 10px",cursor:"pointer",fontFamily:"inherit",transition:"all .3s",flexShrink:0,display:"flex",alignItems:"center"}}>{theme==="dark"?<Sun size={16}/>:<Moon size={16}/>}</button>
+        <button onClick={()=>setNotifOpen(true)} aria-label="Notifications" style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"7px 10px",cursor:"pointer",fontFamily:"inherit",transition:"all .3s",flexShrink:0,display:"flex",alignItems:"center",position:"relative"}}>
+          <Bell size={16}/>
+          {notifications.length>0&&<span style={{position:"absolute",top:4,right:4,width:8,height:8,borderRadius:"50%",background:T.accent,border:`2px solid ${T.bg}`}}/>}
+        </button>
       </div>
       {/* Slim calorie progress bar */}
       <div style={{height:4,borderRadius:99,background:T.barBg,overflow:"hidden",marginBottom:0}}>
