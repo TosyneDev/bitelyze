@@ -1050,26 +1050,51 @@ function DashboardTour({name,onDone}){
 }
 
 function CoachChat({open,onClose,profile,goal,consumed,todayMeals,allHistory,uid}){
-  const[messages,setMessages]=useState(()=>{
-    try{const saved=localStorage.getItem(`bitelyze_coach_${uid}`);return saved?JSON.parse(saved):[];}catch(e){return[];}
+  const[sessions,setSessions]=useState(()=>{
+    try{
+      const raw=localStorage.getItem(`bitelyze_coach_sessions_${uid}`);
+      if(raw){const arr=JSON.parse(raw);if(Array.isArray(arr))return arr;}
+      // Migrate old single-chat format
+      const old=localStorage.getItem(`bitelyze_coach_${uid}`);
+      if(old){
+        const oldMsgs=JSON.parse(old);
+        if(Array.isArray(oldMsgs)&&oldMsgs.filter(m=>m.role==="user").length>0){
+          const migrated=[{id:Date.now()+"-m",startedAt:oldMsgs[0]?.ts||Date.now(),messages:oldMsgs}];
+          try{localStorage.setItem(`bitelyze_coach_sessions_${uid}`,JSON.stringify(migrated));}catch(e){}
+          try{localStorage.removeItem(`bitelyze_coach_${uid}`);}catch(e){}
+          return migrated;
+        }
+        try{localStorage.removeItem(`bitelyze_coach_${uid}`);}catch(e){}
+      }
+      return[];
+    }catch(e){return[];}
   });
+  const[messages,setMessages]=useState([]);
   const[input,setInput]=useState("");
   const[sending,setSending]=useState(false);
   const[err,setErr]=useState(null);
+  const[view,setView]=useState("chat"); // "chat" | "history" | "session"
+  const[viewingIdx,setViewingIdx]=useState(null);
   const scrollRef=useRef(null);
   const inputRef=useRef(null);
 
+  // Persist sessions list
   useEffect(()=>{
-    try{localStorage.setItem(`bitelyze_coach_${uid}`,JSON.stringify(messages));}catch(e){}
-    if(scrollRef.current)scrollRef.current.scrollTop=scrollRef.current.scrollHeight;
-  },[messages,uid]);
+    try{localStorage.setItem(`bitelyze_coach_sessions_${uid}`,JSON.stringify(sessions));}catch(e){}
+  },[sessions,uid]);
 
+  // Auto-scroll on new messages or view change
   useEffect(()=>{
-    if(open&&messages.length===0){
+    if(scrollRef.current)scrollRef.current.scrollTop=scrollRef.current.scrollHeight;
+  },[messages,view]);
+
+  // Fresh greeting on open (when chat is empty)
+  useEffect(()=>{
+    if(open&&view==="chat"&&messages.length===0){
       const greeting=profile.name?`Hey ${profile.name} 👋 I'm your Bitelyze coach. Ask me anything — food suggestions, "can I have this?", stress eating, meal plans, or just vent. I know your goals and recent meals.`:`Hey! I'm your Bitelyze coach. Ask me anything — food suggestions, whether something fits your goal, or just chat. I know your profile and recent meals.`;
       setMessages([{role:"assistant",content:greeting,ts:Date.now()}]);
     }
-  },[open]);
+  },[open,view]);
 
   // Lock body scroll when coach is open so keyboard doesn't push layout
   useEffect(()=>{
@@ -1128,43 +1153,108 @@ function CoachChat({open,onClose,profile,goal,consumed,todayMeals,allHistory,uid
     setSending(false);
   };
 
+  const handleClose=()=>{
+    const userMsgCount=messages.filter(m=>m.role==="user").length;
+    if(userMsgCount>0){
+      const session={
+        id:Date.now()+"-"+Math.random().toString(36).slice(2,8),
+        startedAt:messages[0]?.ts||Date.now(),
+        messages:messages
+      };
+      setSessions(prev=>[session,...prev].slice(0,50));
+    }
+    setMessages([]);
+    setInput("");
+    setView("chat");
+    setViewingIdx(null);
+    onClose();
+  };
+
+  const deleteSession=(idx)=>{
+    setSessions(prev=>prev.filter((_,i)=>i!==idx));
+  };
+
+  const formatSessionDate=(ts)=>{
+    const d=new Date(ts);
+    const now=new Date();
+    const diffH=(now-d)/(1000*60*60);
+    if(diffH<24)return`Today, ${d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`;
+    if(diffH<48)return`Yesterday, ${d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`;
+    if(diffH<7*24)return d.toLocaleDateString([],{weekday:'long',hour:'numeric',minute:'2-digit'});
+    return d.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'});
+  };
+
+  const getPreview=(s)=>{
+    const firstUser=s.messages.find(m=>m.role==="user");
+    return firstUser?firstUser.content.slice(0,100):"(no messages)";
+  };
+
   if(!open)return null;
+  const shownMessages=view==="session"&&viewingIdx!==null?(sessions[viewingIdx]?.messages||[]):messages;
+
   return(<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,height:"100dvh",zIndex:2000,background:T.bg,display:"flex",flexDirection:"column",animation:"fadeIn .25s ease"}}>
-    {/* Header */}
-    <div style={{padding:"calc(14px + env(safe-area-inset-top)) 18px 14px",background:T.headerBg,borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:12,backdropFilter:"blur(20px)"}}>
+    {/* Header — chat view */}
+    {view==="chat"&&<div style={{padding:"calc(14px + env(safe-area-inset-top)) 18px 14px",background:T.headerBg,borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:10,backdropFilter:"blur(20px)"}}>
       <div style={{width:40,height:40,borderRadius:12,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 16px ${T.accentGlow}`}}><Brain size={20} color="#000"/></div>
-      <div style={{flex:1}}>
+      <div style={{flex:1,minWidth:0}}>
         <p style={{fontSize:15,fontWeight:800,color:T.text,lineHeight:1.1}}>Bitelyze Coach</p>
         <p style={{fontSize:11,color:T.accent,fontWeight:600,display:"flex",alignItems:"center",gap:5}}><span style={{width:6,height:6,borderRadius:"50%",background:T.accent,display:"inline-block",boxShadow:`0 0 6px ${T.accent}`}}/>Online</p>
       </div>
-      <button onClick={onClose} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><X size={18}/></button>
-    </div>
+      <button onClick={()=>setView("history")} title="Chat history" style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><Clock size={18}/></button>
+      <button onClick={handleClose} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><X size={18}/></button>
+    </div>}
 
-    {/* Messages */}
-    <div ref={scrollRef} style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:10}}>
-      {messages.map((m,i)=>(<div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start",animation:"fadeIn .3s ease"}}>
+    {/* Header — history & session views */}
+    {(view==="history"||view==="session")&&<div style={{padding:"calc(14px + env(safe-area-inset-top)) 18px 14px",background:T.headerBg,borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:10,backdropFilter:"blur(20px)"}}>
+      <button onClick={()=>{if(view==="session"){setView("history");setViewingIdx(null);}else{setView("chat");}}} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><ArrowLeft size={18}/></button>
+      <div style={{flex:1,minWidth:0}}>
+        <p style={{fontSize:15,fontWeight:800,color:T.text,lineHeight:1.1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{view==="history"?"Chat History":(viewingIdx!==null&&sessions[viewingIdx]?formatSessionDate(sessions[viewingIdx].startedAt):"Session")}</p>
+        {view==="history"&&<p style={{fontSize:11,color:T.muted,fontWeight:500,marginTop:2}}>{sessions.length} past chat{sessions.length===1?"":"s"}</p>}
+      </div>
+      <button onClick={handleClose} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><X size={18}/></button>
+    </div>}
+
+    {/* Body — chat or session messages */}
+    {(view==="chat"||view==="session")&&<div ref={scrollRef} style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:10}}>
+      {shownMessages.map((m,i)=>(<div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start",animation:"fadeIn .3s ease"}}>
         <div style={{maxWidth:"80%",padding:"11px 14px",borderRadius:m.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",background:m.role==="user"?T.accent:T.card,border:m.role==="user"?"none":`1px solid ${T.border}`,color:m.role==="user"?"#000":T.text,fontSize:13.5,lineHeight:1.55,fontWeight:m.role==="user"?600:500,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{m.content}</div>
       </div>))}
-      {sending&&<div style={{display:"flex",justifyContent:"flex-start"}}>
+      {sending&&view==="chat"&&<div style={{display:"flex",justifyContent:"flex-start"}}>
         <div style={{padding:"12px 16px",borderRadius:"16px 16px 16px 4px",background:T.card,border:`1px solid ${T.border}`,display:"flex",gap:4,alignItems:"center"}}>
           {[0,1,2].map(i=>(<span key={i} style={{width:6,height:6,borderRadius:"50%",background:T.accent,display:"inline-block",animation:`pulse 1.2s ease-in-out ${i*0.2}s infinite`}}/>))}
         </div>
       </div>}
-      {err&&<p style={{textAlign:"center",fontSize:12,color:T.danger,padding:"10px"}}>{err}</p>}
-    </div>
+      {err&&view==="chat"&&<p style={{textAlign:"center",fontSize:12,color:T.danger,padding:"10px"}}>{err}</p>}
+    </div>}
 
-    {/* Quick action chips — shown when input is empty and no recent user message */}
-    {input.trim()===""&&messages.filter(m=>m.role==="user").length<2&&<div style={{padding:"4px 14px 0",background:T.card,display:"flex",gap:7,overflowX:"auto",scrollbarWidth:"none",flexShrink:0}}>
+    {/* Body — history list */}
+    {view==="history"&&<div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:10}}>
+      {sessions.length===0?<div style={{textAlign:"center",padding:"60px 20px",color:T.muted}}>
+        <div style={{display:"inline-flex",marginBottom:14,opacity:0.4}}><Clock size={36}/></div>
+        <p style={{fontSize:14,fontWeight:700,color:T.text,marginBottom:6}}>No past chats yet</p>
+        <p style={{fontSize:12,lineHeight:1.5,maxWidth:260,margin:"0 auto"}}>Your conversations will be saved here when you close the coach.</p>
+      </div>:sessions.map((s,i)=>(<div key={s.id} onClick={()=>{setViewingIdx(i);setView("session");}} className="ripple" style={{padding:"14px 16px",background:T.card,border:`1px solid ${T.border}`,borderRadius:14,cursor:"pointer",transition:"all .15s"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7,gap:8}}>
+          <p style={{fontSize:11,color:T.muted,fontWeight:600}}>{formatSessionDate(s.startedAt)}</p>
+          <button onClick={e=>{e.stopPropagation();deleteSession(i);}} title="Delete chat" style={{background:"none",border:"none",color:T.muted,cursor:"pointer",padding:4,display:"flex",borderRadius:6}}><Trash2 size={14}/></button>
+        </div>
+        <p style={{fontSize:13,color:T.text,fontWeight:500,lineHeight:1.45,marginBottom:5,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{getPreview(s)}</p>
+        <p style={{fontSize:11,color:T.muted}}>{s.messages.length} message{s.messages.length===1?"":"s"}</p>
+      </div>))}
+    </div>}
+
+    {/* Quick action chips — only in chat view */}
+    {view==="chat"&&input.trim()===""&&messages.filter(m=>m.role==="user").length<2&&<div style={{padding:"4px 14px 0",background:T.card,display:"flex",gap:7,overflowX:"auto",scrollbarWidth:"none",flexShrink:0}}>
       {["What should I eat?","Can I have pizza tonight?","How am I doing this week?","I need motivation"].map(q=>(
         <button key={q} onClick={()=>setInput(q)} style={{padding:"7px 12px",borderRadius:99,border:`1px solid ${T.border}`,background:T.inputBg,color:T.muted,fontSize:12,fontWeight:500,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>{q}</button>
       ))}
     </div>}
 
-    {/* Input */}
-    <div style={{padding:"12px 14px calc(12px + env(safe-area-inset-bottom))",borderTop:`1px solid ${T.border}`,background:T.card,display:"flex",gap:8,alignItems:"flex-end",flexShrink:0}}>
+    {/* Input — only in chat view */}
+    {view==="chat"&&<div style={{padding:"12px 14px calc(12px + env(safe-area-inset-bottom))",borderTop:`1px solid ${T.border}`,background:T.card,display:"flex",gap:8,alignItems:"flex-end",flexShrink:0}}>
       <textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} placeholder="Ask your coach anything..." rows={1} style={{flex:1,padding:"11px 14px",background:T.inputBg,border:`1px solid ${T.border}`,borderRadius:14,color:T.text,fontSize:16,outline:"none",fontFamily:"inherit",resize:"none",maxHeight:100,lineHeight:1.4}}/>
       <button onClick={send} disabled={!input.trim()||sending} style={{width:44,height:44,borderRadius:12,border:"none",background:input.trim()&&!sending?T.accent:T.inputBg,color:input.trim()&&!sending?"#000":T.muted,cursor:input.trim()&&!sending?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s",flexShrink:0}}><Send size={18}/></button>
-    </div>
+    </div>}
   </div>);
 }
 
