@@ -998,7 +998,7 @@ function ComparisonSlide({onContinue}){
   </div>);
 }
 
-function PlanReady({profile,goal,onStart}){const p=profile||{};const[starting,setStarting]=useState(false);const handleStart=async()=>{if(starting)return;setStarting(true);try{await onStart();}catch(e){console.error("[start tracking]",e);setStarting(false);}};const w=parseFloat(p.weight)||0,h=parseFloat(p.height)||0,a=parseFloat(p.age)||0;const acts={sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very_active:1.9};const bmr=w&&h&&a?Math.round(p.gender==="Male"?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161):0;const tdee=Math.round(bmr*(acts[p.activity]||1.375));const bmi=h>0?(w/((h/100)**2)).toFixed(1):0;const bi=bmi<18.5?["Underweight",T.blue]:bmi<25?["Healthy",T.accent]:bmi<30?["Overweight",T.orange]:["Obese",T.danger];
+function PlanReady({profile,goal,onStart}){const p=profile||{};const[starting,setStarting]=useState(false);const handleStart=()=>{if(starting)return;setStarting(true);try{onStart();}catch(e){console.error("[start tracking]",e);setStarting(false);}};const w=parseFloat(p.weight)||0,h=parseFloat(p.height)||0,a=parseFloat(p.age)||0;const acts={sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very_active:1.9};const bmr=w&&h&&a?Math.round(p.gender==="Male"?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161):0;const tdee=Math.round(bmr*(acts[p.activity]||1.375));const bmi=h>0?(w/((h/100)**2)).toFixed(1):0;const bi=bmi<18.5?["Underweight",T.blue]:bmi<25?["Healthy",T.accent]:bmi<30?["Overweight",T.orange]:["Obese",T.danger];
   const goalLabels={lose_fast:"weight loss",lose:"weight loss",lose_slow:"weight loss",maintain:"weight maintenance",gain:"muscle gain"};
   const motivationLabels={confidence:"Feel more confident in myself",energy:"Have more energy and better mood",clothes:"Fit into clothes I love",health:"Improve my physical health",loved_ones:"Be more present for loved ones"};
   const gLabel=goalLabels[p.goal]||"your goals";
@@ -3049,23 +3049,14 @@ export default function App(){
     localStorage.removeItem('bitelyze_screen');
   }setAuthResolved(true);});return unsub;},[]);
 
-  const saveAndContinue=async()=>{
+  const saveAndContinue=()=>{
     try{localStorage.setItem('bitelyze_screen','app');}catch(e){}
     if(authUser){
       try{localStorage.setItem(`setup_complete_${authUser.uid}`,"1");}catch(e){}
       try{localStorage.setItem("profile_"+authUser.uid,JSON.stringify(profile));}catch(e){}
-      try{
-        await Promise.race([
-          setDoc(doc(db,"users",authUser.uid,"data","profile"),profile,{merge:true}),
-          new Promise(r=>setTimeout(r,1500))
-        ]);
-      }catch(e){console.log("[saveAndContinue] firestore:",e);}
+      try{setDoc(doc(db,"users",authUser.uid,"data","profile"),profile,{merge:true}).catch(()=>{});}catch(e){}
     }
-    if(window.location.pathname!=="/dashboard"){
-      window.location.assign("/dashboard");
-    } else {
-      setScreen("app");
-    }
+    window.location.assign("/dashboard");
   };
 
   if(!onboarded){navigate("/onboarding");return(<><style>{GS}</style><Onboarding onDone={(mode)=>{localStorage.setItem('bitelyze_onboarded','1');setAuthInitialMode(mode||"signup");setOnboarded(true);}}/></>);}
