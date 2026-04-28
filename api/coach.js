@@ -29,12 +29,24 @@ function checkRateLimit(req, email) {
   return true;
 }
 
-function buildSystemPrompt(ctx) {
+const LANG_PROMPT_NAME = {
+  en: "English", es: "Spanish", fr: "French", pt: "Portuguese", de: "German",
+  it: "Italian", nl: "Dutch", ru: "Russian", tr: "Turkish", ar: "Arabic",
+  hi: "Hindi", zh: "Mandarin Chinese (Simplified)", ja: "Japanese", ko: "Korean",
+  id: "Indonesian", tl: "Filipino (Tagalog)", sw: "Swahili", yo: "Yoruba",
+  ig: "Igbo", ha: "Hausa",
+};
+
+function buildSystemPrompt(ctx, lang) {
   const { name, goal, goalSpeed, height, weight, targetWeight, dailyGoal, consumed, todayMeals, recentSummary, motivation, blockers, habits } = ctx || {};
   const goalLabels = { lose_fast: "lose weight fast", lose: "lose weight steadily", lose_slow: "lose weight gradually", maintain: "maintain weight", gain: "build muscle" };
   const motivationLabels = { confidence: "feel more confident", energy: "have more energy and better mood", clothes: "fit into clothes they love", health: "improve physical health", loved_ones: "be more present for loved ones" };
+  const langName = LANG_PROMPT_NAME[lang] || "English";
+  const langInstruction = lang && lang !== "en"
+    ? `\n\nLANGUAGE: Respond exclusively in ${langName}. The user has chosen ${langName} as their preferred language. Do not switch languages unless they explicitly ask. Numbers and units (kcal, g, kg) stay as numerals; everything else must be in ${langName}.`
+    : "";
 
-  return `You are Bitelyze — a warm, sharp, no-nonsense AI nutrition coach. You know this user's full profile and recent eating patterns. Respond like a real human coach, not a chatbot.
+  return `You are Bitelyze — a warm, sharp, no-nonsense AI nutrition coach. You know this user's full profile and recent eating patterns. Respond like a real human coach, not a chatbot.${langInstruction}
 
 USER PROFILE:
 - Name: ${name || "User"}
@@ -77,12 +89,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { messages, userContext } = req.body;
+    const { messages, userContext, lang } = req.body;
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: "Missing messages" });
     }
 
-    const systemPrompt = buildSystemPrompt(userContext);
+    const systemPrompt = buildSystemPrompt(userContext, lang);
 
     // Build conversation history — keep last 12 messages for context
     const chatHistory = messages.slice(-12).map(m => ({

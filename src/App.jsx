@@ -8,7 +8,8 @@ import {
 import {
   initializeFirestore, doc, setDoc, getDoc, arrayUnion
 } from "firebase/firestore";
-import { Camera, ClipboardList, BarChart3, User, Flame, Target, Zap, UtensilsCrossed, Brain, Droplets, Trophy, Heart, ArrowLeft, ArrowRight, Upload, Search, Settings, LogOut, ChevronRight, ChevronLeft, Lock, Unlock, HelpCircle, Plus, Minus, X, Star, Activity, Scale, Ruler, Calendar, Sun, Moon, Check, ChevronUp, ChevronDown, RotateCcw, Trash2, Share2, Download, FlaskConical, Clock, Pencil, AlertTriangle, Info, Rocket, Dumbbell, Sprout, Sofa, Footprints, TrendingUp, TrendingDown, Lightbulb, Sparkles, Stethoscope, Repeat, MessageCircle, Send, MoreHorizontal, Palette, Smartphone, Share, ArrowUpRight, Apple, Bell, BellOff, Mic, MicOff, Copy } from "lucide-react";
+import { Camera, ClipboardList, BarChart3, User, Flame, Target, Zap, UtensilsCrossed, Brain, Droplets, Trophy, Heart, ArrowLeft, ArrowRight, Upload, Search, Settings, LogOut, ChevronRight, ChevronLeft, Lock, Unlock, HelpCircle, Plus, Minus, X, Star, Activity, Scale, Ruler, Calendar, Sun, Moon, Check, ChevronUp, ChevronDown, RotateCcw, Trash2, Share2, Download, FlaskConical, Clock, Pencil, AlertTriangle, Info, Rocket, Dumbbell, Sprout, Sofa, Footprints, TrendingUp, TrendingDown, Lightbulb, Sparkles, Stethoscope, Repeat, MessageCircle, Send, MoreHorizontal, Palette, Smartphone, Share, ArrowUpRight, Apple, Bell, BellOff, Mic, MicOff, Copy, Globe } from "lucide-react";
+import { LANGUAGES, makeT, getStoredLang, setStoredLang } from "./i18n";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBdin15LOt0vwN3H1EXAnFox2Zyjek5J4Y",
@@ -998,7 +999,7 @@ function ComparisonSlide({onContinue}){
   </div>);
 }
 
-function PlanReady({profile,goal,onStart}){const p=profile||{};const[starting,setStarting]=useState(false);const handleStart=()=>{if(starting)return;setStarting(true);try{onStart();}catch(e){console.error("[start tracking]",e);setStarting(false);}};const w=parseFloat(p.weight)||0,h=parseFloat(p.height)||0,a=parseFloat(p.age)||0;const acts={sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very_active:1.9};const bmr=w&&h&&a?Math.round(p.gender==="Male"?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161):0;const tdee=Math.round(bmr*(acts[p.activity]||1.375));const bmi=h>0?(w/((h/100)**2)).toFixed(1):0;const bi=bmi<18.5?["Underweight",T.blue]:bmi<25?["Healthy",T.accent]:bmi<30?["Overweight",T.orange]:["Obese",T.danger];
+function PlanReady({profile,goal,onStart,t}){const p=profile||{};const[starting,setStarting]=useState(false);const handleStart=()=>{if(starting)return;setStarting(true);try{onStart();}catch(e){console.error("[start tracking]",e);setStarting(false);}};const tr=t||((k)=>({"plan.startTracking":"Start Tracking","plan.settingUp":"Setting up your dashboard…"})[k]||k);const w=parseFloat(p.weight)||0,h=parseFloat(p.height)||0,a=parseFloat(p.age)||0;const acts={sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very_active:1.9};const bmr=w&&h&&a?Math.round(p.gender==="Male"?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161):0;const tdee=Math.round(bmr*(acts[p.activity]||1.375));const bmi=h>0?(w/((h/100)**2)).toFixed(1):0;const bi=bmi<18.5?["Underweight",T.blue]:bmi<25?["Healthy",T.accent]:bmi<30?["Overweight",T.orange]:["Obese",T.danger];
   const goalLabels={lose_fast:"weight loss",lose:"weight loss",lose_slow:"weight loss",maintain:"weight maintenance",gain:"muscle gain"};
   const motivationLabels={confidence:"Feel more confident in myself",energy:"Have more energy and better mood",clothes:"Fit into clothes I love",health:"Improve my physical health",loved_ones:"Be more present for loved ones"};
   const gLabel=goalLabels[p.goal]||"your goals";
@@ -1017,7 +1018,7 @@ function PlanReady({profile,goal,onStart}){const p=profile||{};const[starting,se
       <p style={{fontSize:10,color:T.muted,textTransform:"uppercase",letterSpacing:"1.2px",fontWeight:700,marginBottom:6}}>Your Reason</p>
       <p style={{fontSize:14,fontWeight:800,color:T.accent,lineHeight:1.4}}>{motivationLabels[p.motivation]}</p>
     </div>}
-    <Btn onClick={handleStart} disabled={starting} style={{fontSize:16,padding:"15px"}}><span style={{display:"inline-flex",alignItems:"center",gap:8}}>{starting?<><div style={{width:14,height:14,border:"2px solid currentColor",borderTopColor:"transparent",borderRadius:"50%",opacity:0.8}} className="spin"/> Setting up your dashboard...</>:<><Rocket size={16}/> Start Tracking</>}</span></Btn></div></div>);}
+    <Btn onClick={handleStart} disabled={starting} style={{fontSize:16,padding:"15px"}}><span style={{display:"inline-flex",alignItems:"center",gap:8}}>{starting?<><div style={{width:14,height:14,border:"2px solid currentColor",borderTopColor:"transparent",borderRadius:"50%",opacity:0.8}} className="spin"/> {tr("plan.settingUp")}</>:<><Rocket size={16}/> {tr("plan.startTracking")}</>}</span></Btn></div></div>);}
 
 function DashboardTour({name,onDone}){
   const[step,setStep]=useState(0);
@@ -1049,7 +1050,7 @@ function DashboardTour({name,onDone}){
   </div>);
 }
 
-function CoachChat({open,onClose,profile,goal,consumed,todayMeals,allHistory,uid}){
+function CoachChat({open,onClose,profile,goal,consumed,todayMeals,allHistory,uid,lang,t}){
   const[sessions,setSessions]=useState(()=>{
     try{
       const raw=localStorage.getItem(`bitelyze_coach_sessions_${uid}`);
@@ -1139,7 +1140,7 @@ function CoachChat({open,onClose,profile,goal,consumed,todayMeals,allHistory,uid
         name:profile.name,goal:profile.goal,goalSpeed:profile.goalSpeed,height:profile.height,weight:profile.weight,targetWeight:profile.targetWeight,
         dailyGoal:goal,consumed,todayMeals:todayMeals?.slice(-5),recentSummary,motivation:profile.motivation,blockers:profile.blockers,habits:profile.habits
       };
-      const res=await fetch("/api/coach",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:newMessages.map(m=>({role:m.role,content:m.content})),userContext,userEmail:auth.currentUser?.email||null})});
+      const res=await fetch("/api/coach",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:newMessages.map(m=>({role:m.role,content:m.content})),userContext,userEmail:auth.currentUser?.email||null,lang:lang||"en"})});
       if(!res.ok){
         const e=await res.json().catch(()=>({}));
         setErr(e.error?.message||e.error||"Coach is offline. Try again.");
@@ -1198,9 +1199,9 @@ function CoachChat({open,onClose,profile,goal,consumed,todayMeals,allHistory,uid
       <div style={{width:40,height:40,borderRadius:12,background:`linear-gradient(135deg,${T.accent},#00b87a)`,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 16px ${T.accentGlow}`}}><Brain size={20} color="#000"/></div>
       <div style={{flex:1,minWidth:0}}>
         <p style={{fontSize:15,fontWeight:800,color:T.text,lineHeight:1.1}}>Bitelyze Coach</p>
-        <p style={{fontSize:11,color:T.accent,fontWeight:600,display:"flex",alignItems:"center",gap:5}}><span style={{width:6,height:6,borderRadius:"50%",background:T.accent,display:"inline-block",boxShadow:`0 0 6px ${T.accent}`}}/>Online</p>
+        <p style={{fontSize:11,color:T.accent,fontWeight:600,display:"flex",alignItems:"center",gap:5}}><span style={{width:6,height:6,borderRadius:"50%",background:T.accent,display:"inline-block",boxShadow:`0 0 6px ${T.accent}`}}/>{t?t("coach.online"):"Online"}</p>
       </div>
-      <button onClick={()=>setView("history")} title="Chat history" style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><Clock size={18}/></button>
+      <button onClick={()=>setView("history")} title={t?t("coach.history"):"Chat history"} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><Clock size={18}/></button>
       <button onClick={handleClose} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><X size={18}/></button>
     </div>}
 
@@ -1208,7 +1209,7 @@ function CoachChat({open,onClose,profile,goal,consumed,todayMeals,allHistory,uid
     {(view==="history"||view==="session")&&<div style={{padding:"calc(14px + env(safe-area-inset-top)) 18px 14px",background:T.headerBg,borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:10,backdropFilter:"blur(20px)"}}>
       <button onClick={()=>{if(view==="session"){setView("history");setViewingIdx(null);}else{setView("chat");}}} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><ArrowLeft size={18}/></button>
       <div style={{flex:1,minWidth:0}}>
-        <p style={{fontSize:15,fontWeight:800,color:T.text,lineHeight:1.1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{view==="history"?"Chat History":(viewingIdx!==null&&sessions[viewingIdx]?formatSessionDate(sessions[viewingIdx].startedAt):"Session")}</p>
+        <p style={{fontSize:15,fontWeight:800,color:T.text,lineHeight:1.1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{view==="history"?(t?t("coach.history"):"Chat History"):(viewingIdx!==null&&sessions[viewingIdx]?formatSessionDate(sessions[viewingIdx].startedAt):"Session")}</p>
         {view==="history"&&<p style={{fontSize:11,color:T.muted,fontWeight:500,marginTop:2}}>{sessions.length} past chat{sessions.length===1?"":"s"}</p>}
       </div>
       <button onClick={handleClose} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.muted,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><X size={18}/></button>
@@ -1252,16 +1253,16 @@ function CoachChat({open,onClose,profile,goal,consumed,todayMeals,allHistory,uid
 
     {/* Input — only in chat view */}
     {view==="chat"&&<div style={{padding:"12px 14px calc(12px + env(safe-area-inset-bottom))",borderTop:`1px solid ${T.border}`,background:T.card,display:"flex",gap:8,alignItems:"flex-end",flexShrink:0}}>
-      <textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} placeholder="Ask your coach anything..." rows={1} style={{flex:1,padding:"11px 14px",background:T.inputBg,border:`1px solid ${T.border}`,borderRadius:14,color:T.text,fontSize:16,outline:"none",fontFamily:"inherit",resize:"none",maxHeight:100,lineHeight:1.4}}/>
+      <textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} placeholder={t?t("coach.placeholder"):"Ask your coach anything..."} rows={1} style={{flex:1,padding:"11px 14px",background:T.inputBg,border:`1px solid ${T.border}`,borderRadius:14,color:T.text,fontSize:16,outline:"none",fontFamily:"inherit",resize:"none",maxHeight:100,lineHeight:1.4}}/>
       <button onClick={send} disabled={!input.trim()||sending} style={{width:44,height:44,borderRadius:12,border:"none",background:input.trim()&&!sending?T.accent:T.inputBg,color:input.trim()&&!sending?"#000":T.muted,cursor:input.trim()&&!sending?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s",flexShrink:0}}><Send size={18}/></button>
     </div>}
   </div>);
 }
 
-function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}){
+function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme,lang,setLang,t}){
   const[tab,setTab]=useState("analyze");
   const[coachOpen,setCoachOpen]=useState(false);
-  const[moreView,setMoreView]=useState(null);// null=menu, "profile"|"appearance"|"homescreen"|"weeklywrap"|"notifications"
+  const[moreView,setMoreView]=useState(null);// null=menu, "profile"|"appearance"|"homescreen"|"weeklywrap"|"notifications"|"language"
   const[notifOpen,setNotifOpen]=useState(false);
   const[showTour,setShowTour]=useState(()=>{try{return!localStorage.getItem(`bitelyze_tour_v1_${uid}`);}catch(e){return false;}});
   const[condensedStepIdx,setCondensedStepIdx]=useState(null);// null=closed, 0..N=current question, "done"=success
@@ -1989,7 +1990,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
     </div>}
 
     {/* ── Coach Chat ── */}
-    <CoachChat open={coachOpen} onClose={()=>setCoachOpen(false)} profile={profile} goal={goal} consumed={consumed} todayMeals={mealLog} allHistory={allHistory} uid={uid}/>
+    <CoachChat open={coachOpen} onClose={()=>setCoachOpen(false)} profile={profile} goal={goal} consumed={consumed} todayMeals={mealLog} allHistory={allHistory} uid={uid} lang={lang} t={t}/>
 
     {/* ── Toast Notification ── */}
     {toast&&(<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:`linear-gradient(135deg,${T.accent},#00b87a)`,color:"#000",padding:"12px 24px",borderRadius:16,fontSize:14,fontWeight:700,zIndex:9999,animation:"slideUp .3s ease forwards",boxShadow:`0 8px 32px ${T.accentGlow}`,maxWidth:"90%",textAlign:"center"}}>{toast}</div>)}
@@ -2723,12 +2724,12 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
           {title:"Community",items:[
             {icon:<Flame size={18} color={T.orange}/>,label:"Join the Insiders 🔥",detail:"WhatsApp",onClick:()=>window.open("https://chat.whatsapp.com/Hki0wdepcyh3Wn4QwNCVc3","_blank","noopener,noreferrer")},
           ]},
-          {title:"Account",items:[
-            {icon:<User size={18} color={T.accent}/>,label:"My Profile",onClick:()=>setMoreView("profile")},
-            {icon:<Target size={18} color={T.accent}/>,label:"Edit Goals",onClick:onEditProfile},
+          {title:t("more.account"),items:[
+            {icon:<User size={18} color={T.accent}/>,label:t("more.myProfile"),onClick:()=>setMoreView("profile")},
+            {icon:<Target size={18} color={T.accent}/>,label:t("more.editGoals"),onClick:onEditProfile},
           ]},
-          {title:"Features",items:[
-            {icon:<MessageCircle size={18} color={T.accent}/>,label:"Chat with Bitelyze Coach",onClick:()=>setCoachOpen(true)},
+          {title:t("more.features"),items:[
+            {icon:<MessageCircle size={18} color={T.accent}/>,label:t("more.chatCoach"),onClick:()=>setCoachOpen(true)},
             {icon:<BarChart3 size={18} color={T.accent}/>,label:"Progress & Analytics",onClick:()=>setTab("progress")},
             {icon:<Calendar size={18} color={T.accent}/>,label:"Weekly Wrap-Up",onClick:()=>setMoreView("weeklywrap")},
             {icon:<HelpCircle size={18} color={T.accent}/>,label:"View Tour Again",onClick:()=>setShowTour(true)},
@@ -2750,10 +2751,11 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
               }catch(e){setToast("Sync failed — check connection");}
             }},
           ]},
-          {title:"App",items:[
-            {icon:<Palette size={18} color={T.accent}/>,label:"Appearance",detail:theme==="dark"?"Dark":"Light",onClick:()=>setMoreView("appearance")},
-            {icon:<Bell size={18} color={T.accent}/>,label:"Notifications",detail:notifPermission==='granted'&&localStorage.getItem('bitelyze_notif_enabled')==='1'?"On":notifPermission==='denied'?"Blocked":"Off",onClick:()=>setMoreView("notifications")},
-            {icon:<Smartphone size={18} color={T.accent}/>,label:"Add to Home Screen",onClick:()=>setMoreView("homescreen")},
+          {title:t("more.app"),items:[
+            {icon:<Palette size={18} color={T.accent}/>,label:t("more.appearance"),detail:theme==="dark"?"Dark":"Light",onClick:()=>setMoreView("appearance")},
+            {icon:<Bell size={18} color={T.accent}/>,label:t("more.notifications"),detail:notifPermission==='granted'&&localStorage.getItem('bitelyze_notif_enabled')==='1'?"On":notifPermission==='denied'?"Blocked":"Off",onClick:()=>setMoreView("notifications")},
+            {icon:<Globe size={18} color={T.accent}/>,label:t("more.language"),detail:(LANGUAGES.find(l=>l.code===lang)||LANGUAGES[0]).native,onClick:()=>setMoreView("language")},
+            {icon:<Smartphone size={18} color={T.accent}/>,label:t("more.homeScreen"),onClick:()=>setMoreView("homescreen")},
           ]}
         ].map((group,gi)=>(<div key={gi} style={{marginBottom:18}}>
           <p style={{fontSize:11,fontWeight:700,color:T.muted,textTransform:"uppercase",letterSpacing:".8px",marginBottom:8,paddingLeft:4}}>{group.title}</p>
@@ -2768,7 +2770,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
         </div>))}
 
         {/* Sign Out — separate, visually distinct */}
-        <button onClick={onSignOut} className="ripple" style={{width:"100%",padding:"14px",borderRadius:14,border:`1px solid ${T.danger}25`,background:`${T.danger}08`,color:T.danger,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:14,marginTop:6,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><LogOut size={14}/> Sign Out</button>
+        <button onClick={onSignOut} className="ripple" style={{width:"100%",padding:"14px",borderRadius:14,border:`1px solid ${T.danger}25`,background:`${T.danger}08`,color:T.danger,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:14,marginTop:6,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><LogOut size={14}/> {t("common.signOut")}</button>
       </>)}
 
       {/* ── Appearance sub-view ── */}
@@ -2789,6 +2791,25 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
           </div>
           {on&&<Check size={20} color={T.accent}/>}
         </button>);})}
+      </>)}
+
+      {/* ── Language sub-view ── */}
+      {tab==="me"&&moreView==="language"&&(<>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20,paddingTop:4}}>
+          <button onClick={()=>setMoreView(null)} style={{background:T.inputBg,border:`1px solid ${T.border}`,color:T.text,borderRadius:10,padding:"8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><ArrowLeft size={18}/></button>
+          <h2 style={{fontSize:20,fontWeight:800,color:T.text}}>{t("more.language")}</h2>
+        </div>
+        <p style={{fontSize:13,color:T.muted,marginBottom:18,paddingLeft:2,lineHeight:1.5}}>{t("more.languageDesc")}</p>
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden",boxShadow:T.cardShadow||"none"}}>
+          {LANGUAGES.map((opt,i)=>{const on=lang===opt.code;return(<button key={opt.code} onClick={()=>setLang(opt.code)} style={{width:"100%",padding:"14px 16px",background:on?`${T.accent}10`:"transparent",border:"none",borderBottom:i<LANGUAGES.length-1?`1px solid ${T.border}`:"none",color:T.text,fontFamily:"inherit",fontSize:14,fontWeight:500,cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left",transition:"background .15s"}}>
+            <span style={{fontSize:22,width:32,textAlign:"center",flexShrink:0}}>{opt.flag}</span>
+            <div style={{flex:1,minWidth:0}}>
+              <p style={{fontSize:14,fontWeight:700,color:on?T.accent:T.text,marginBottom:2}}>{opt.native}</p>
+              <p style={{fontSize:11,color:T.muted}}>{opt.name}</p>
+            </div>
+            {on&&<Check size={18} color={T.accent}/>}
+          </button>);})}
+        </div>
       </>)}
 
       {/* ── Add to Home Screen guide sub-view ── */}
@@ -3049,7 +3070,7 @@ function TrackerApp({profile,goal,uid,onEditProfile,onSignOut,theme,toggleTheme}
     {!coachOpen&&<div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:1000,background:theme==="dark"?"rgba(8,8,14,0.94)":"rgba(245,245,248,0.96)",backdropFilter:"blur(24px)",WebkitBackdropFilter:"blur(24px)",borderTop:`1px solid ${T.border}`,paddingBottom:"env(safe-area-inset-bottom)",boxShadow:theme==="dark"?"0 -4px 24px rgba(0,0,0,0.4)":"0 -4px 24px rgba(0,0,0,0.08)"}}>
       <div style={{display:"flex",maxWidth:480,margin:"0 auto",position:"relative",padding:"6px 12px"}}>
         <div style={{position:"absolute",top:6,left:`calc(${activeTabIdx*25}% + 16px)`,width:"calc(25% - 20px)",height:"calc(100% - 12px)",background:`linear-gradient(135deg,${T.accent}18,${T.accent}08)`,borderRadius:12,transition:"left .3s cubic-bezier(0.16,1,0.3,1)",boxShadow:`0 0 12px ${T.accent}15,inset 0 1px 0 rgba(255,255,255,0.04)`,pointerEvents:"none"}}/>
-        {[["analyze",<Camera size={20}/>,"Analyze"],["log",<ClipboardList size={20}/>,"Log"],["progress",<BarChart3 size={20}/>,"Progress"],["me",<MoreHorizontal size={20}/>,"More"]].map(([k,ic,lb])=>(<button key={k} onClick={()=>setTab(k)} style={{flex:1,padding:"8px 4px",border:"none",background:"transparent",color:tab===k?T.accent:T.muted,fontWeight:700,cursor:"pointer",borderRadius:12,transition:"all .25s cubic-bezier(0.16,1,0.3,1)",fontFamily:"inherit",position:"relative",zIndex:1,opacity:tab===k?1:0.5,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+        {[["analyze",<Camera size={20}/>,t("tab.analyze")],["log",<ClipboardList size={20}/>,t("tab.log")],["progress",<BarChart3 size={20}/>,t("tab.progress")],["me",<MoreHorizontal size={20}/>,t("tab.more")]].map(([k,ic,lb])=>(<button key={k} onClick={()=>setTab(k)} style={{flex:1,padding:"8px 4px",border:"none",background:"transparent",color:tab===k?T.accent:T.muted,fontWeight:700,cursor:"pointer",borderRadius:12,transition:"all .25s cubic-bezier(0.16,1,0.3,1)",fontFamily:"inherit",position:"relative",zIndex:1,opacity:tab===k?1:0.5,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
           <span style={{display:"inline-block"}}>{ic}</span>
           <span style={{fontSize:10,fontWeight:700,color:tab===k?T.accent:T.muted}}>{lb}</span>
         </button>))}
@@ -3066,6 +3087,9 @@ export default function App(){
   const[theme,setTheme]=useState(()=>localStorage.getItem("bitelyze_theme")||"dark");
   T=THEMES[theme];
   const toggleTheme=()=>{const next=theme==="dark"?"light":"dark";setTheme(next);localStorage.setItem("bitelyze_theme",next);T=THEMES[next];};
+  const[lang,setLangState]=useState(()=>getStoredLang());
+  const setLang=(code)=>{setLangState(code);setStoredLang(code);};
+  const t=makeT(lang);
   const[authUser,setAuthUser]=useState(undefined);
   const[authResolved,setAuthResolved]=useState(false);
   const[profileLoading,setProfileLoading]=useState(false);
@@ -3167,6 +3191,6 @@ export default function App(){
     {screen==="s9"&&<StepMotivation p={profile} setP={setProfile} onNext={()=>setScreen("compare")} onBack={()=>setScreen("s8")} onSkip={()=>setScreen("compare")}/>}
     {screen==="compare"&&<ComparisonSlide onContinue={()=>setScreen("m3")}/>}
     {screen==="m3"&&<Motivational3 onContinue={()=>setScreen("plan")}/>}
-    {screen==="plan"&&<PlanReady profile={profile} goal={goal} onStart={saveAndContinue}/>}
-    {screen==="app"&&<TrackerApp profile={profile} goal={goal} uid={authUser.uid} onEditProfile={()=>setScreen("s1")} onSignOut={()=>signOut(auth)} theme={theme} toggleTheme={toggleTheme}/>}
+    {screen==="plan"&&<PlanReady profile={profile} goal={goal} onStart={saveAndContinue} t={t}/>}
+    {screen==="app"&&<TrackerApp profile={profile} goal={goal} uid={authUser.uid} onEditProfile={()=>setScreen("s1")} onSignOut={()=>signOut(auth)} theme={theme} toggleTheme={toggleTheme} lang={lang} setLang={setLang} t={t}/>}
   </div>);}
