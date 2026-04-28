@@ -999,7 +999,7 @@ function ComparisonSlide({onContinue}){
   </div>);
 }
 
-function PlanReady({profile,goal,onStart,t}){const p=profile||{};const[starting,setStarting]=useState(false);const handleStart=()=>{if(starting)return;setStarting(true);try{onStart();}catch(e){console.error("[start tracking]",e);setStarting(false);}};const tr=t||((k)=>({"plan.startTracking":"Start Tracking","plan.settingUp":"Setting up your dashboard…"})[k]||k);const w=parseFloat(p.weight)||0,h=parseFloat(p.height)||0,a=parseFloat(p.age)||0;const acts={sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very_active:1.9};const bmr=w&&h&&a?Math.round(p.gender==="Male"?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161):0;const tdee=Math.round(bmr*(acts[p.activity]||1.375));const bmi=h>0?(w/((h/100)**2)).toFixed(1):0;const bi=bmi<18.5?["Underweight",T.blue]:bmi<25?["Healthy",T.accent]:bmi<30?["Overweight",T.orange]:["Obese",T.danger];
+function PlanReady({profile,goal,onStart,t,isEditing}){const p=profile||{};const[starting,setStarting]=useState(false);const handleStart=()=>{if(starting)return;setStarting(true);try{onStart();}catch(e){console.error("[start tracking]",e);setStarting(false);}};const tr=t||((k)=>({"plan.startTracking":"Start Tracking","plan.settingUp":"Setting up your dashboard…","plan.saveChanges":"Save Changes","plan.saving":"Saving changes…"})[k]||k);const w=parseFloat(p.weight)||0,h=parseFloat(p.height)||0,a=parseFloat(p.age)||0;const acts={sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very_active:1.9};const bmr=w&&h&&a?Math.round(p.gender==="Male"?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161):0;const tdee=Math.round(bmr*(acts[p.activity]||1.375));const bmi=h>0?(w/((h/100)**2)).toFixed(1):0;const bi=bmi<18.5?["Underweight",T.blue]:bmi<25?["Healthy",T.accent]:bmi<30?["Overweight",T.orange]:["Obese",T.danger];
   const goalLabels={lose_fast:"weight loss",lose:"weight loss",lose_slow:"weight loss",maintain:"weight maintenance",gain:"muscle gain"};
   const motivationLabels={confidence:"Feel more confident in myself",energy:"Have more energy and better mood",clothes:"Fit into clothes I love",health:"Improve my physical health",loved_ones:"Be more present for loved ones"};
   const gLabel=goalLabels[p.goal]||"your goals";
@@ -1018,7 +1018,7 @@ function PlanReady({profile,goal,onStart,t}){const p=profile||{};const[starting,
       <p style={{fontSize:10,color:T.muted,textTransform:"uppercase",letterSpacing:"1.2px",fontWeight:700,marginBottom:6}}>Your Reason</p>
       <p style={{fontSize:14,fontWeight:800,color:T.accent,lineHeight:1.4}}>{motivationLabels[p.motivation]}</p>
     </div>}
-    <Btn onClick={handleStart} disabled={starting} style={{fontSize:16,padding:"15px"}}><span style={{display:"inline-flex",alignItems:"center",gap:8}}>{starting?<><div style={{width:14,height:14,border:"2px solid currentColor",borderTopColor:"transparent",borderRadius:"50%",opacity:0.8}} className="spin"/> {tr("plan.settingUp")}</>:<><Rocket size={16}/> {tr("plan.startTracking")}</>}</span></Btn></div></div>);}
+    <Btn onClick={handleStart} disabled={starting} style={{fontSize:16,padding:"15px"}}><span style={{display:"inline-flex",alignItems:"center",gap:8}}>{starting?<><div style={{width:14,height:14,border:"2px solid currentColor",borderTopColor:"transparent",borderRadius:"50%",opacity:0.8}} className="spin"/> {isEditing?tr("plan.saving"):tr("plan.settingUp")}</>:<>{isEditing?<Check size={16}/>:<Rocket size={16}/>} {isEditing?tr("plan.saveChanges"):tr("plan.startTracking")}</>}</span></Btn></div></div>);}
 
 function DashboardTour({name,onDone}){
   const[step,setStep]=useState(0);
@@ -3191,6 +3191,6 @@ export default function App(){
     {screen==="s9"&&<StepMotivation p={profile} setP={setProfile} onNext={()=>setScreen("compare")} onBack={()=>setScreen("s8")} onSkip={()=>setScreen("compare")}/>}
     {screen==="compare"&&<ComparisonSlide onContinue={()=>setScreen("m3")}/>}
     {screen==="m3"&&<Motivational3 onContinue={()=>setScreen("plan")}/>}
-    {screen==="plan"&&<PlanReady profile={profile} goal={goal} onStart={saveAndContinue} t={t}/>}
+    {screen==="plan"&&<PlanReady profile={profile} goal={goal} onStart={saveAndContinue} t={t} isEditing={!!(authUser&&localStorage.getItem(`setup_complete_${authUser.uid}`)==="1")}/>}
     {screen==="app"&&<TrackerApp profile={profile} goal={goal} uid={authUser.uid} onEditProfile={()=>setScreen("s1")} onSignOut={()=>signOut(auth)} theme={theme} toggleTheme={toggleTheme} lang={lang} setLang={setLang} t={t}/>}
   </div>);}
